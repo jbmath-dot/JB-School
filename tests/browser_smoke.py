@@ -5,7 +5,7 @@ base=Path(__file__).parents[1]
 html=(base/'index.html').read_text()
 html=html.replace('<link rel="stylesheet" href="src/styles.css" />','<style>'+ (base/'src/styles.css').read_text()+'</style>')
 html=html.replace('<link rel="stylesheet" href="src/modules.css" />','<style>'+ (base/'src/modules.css').read_text()+'</style>')
-for s in ['core.js','modules-core.js','modules-ui.js','app.js']:
+for s in ['core.js','modules-core.js','local-tools-core.js','modules-ui.js','app.js']:
  html=html.replace(f'<script src="src/{s}"></script>', '<script>'+ (base/'src'/s).read_text()+'</script>')
 with sync_playwright() as pw:
  browser=pw.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])

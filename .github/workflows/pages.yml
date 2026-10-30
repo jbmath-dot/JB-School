@@ -20,6 +20,7 @@ jobs:
           node-version: '22'
       - run: node --check src/core.js
       - run: node --check src/app.js
+      - run: node --check src/local-tools-core.js
       - run: node --check src/modules-core.js
       - run: node --check src/modules-ui.js
       - run: node --test tests/*.test.cjs

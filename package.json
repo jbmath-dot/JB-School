@@ -1,1 +1,11 @@
-{"name":"jb-school","version":"0.2.0","private":true,"description":"JB School standalone MVP — local demonstrations of seven school-workflow modules","scripts":{"dev":"python -m http.server 8000","test":"node --test tests/*.test.cjs"},"license":"UNLICENSED"}
+{
+  "name": "jb-school",
+  "version": "0.3.0",
+  "private": true,
+  "description": "JB School seven local-first work tools; server collaboration deferred",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "license": "UNLICENSED"
+}
