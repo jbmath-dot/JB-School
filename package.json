@@ -1,1 +1,1 @@
-{"name":"jb-school","version":"0.1.0","private":true,"description":"JB School standalone MVP — local demonstration of response collection workflows","scripts":{"dev":"python -m http.server 8000","test":"node --test tests/*.test.cjs"},"license":"UNLICENSED"}
+{"name":"jb-school","version":"0.2.0","private":true,"description":"JB School standalone MVP — local demonstrations of seven school-workflow modules","scripts":{"dev":"python -m http.server 8000","test":"node --test tests/*.test.cjs"},"license":"UNLICENSED"}
