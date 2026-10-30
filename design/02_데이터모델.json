@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "project": "JB School",
+    "version": "1.0.0-design",
+    "date": "2026-10-31",
+    "status": "proposal_not_deployed",
+    "rules": [
+      "Never place school data or API secrets in a public GitHub repository.",
+      "Student evaluation and school record datasets are local-only and isolated from the online collaborative DB.",
+      "All online authorization must be checked server-side for every record and write operation.",
+      "Each regulatory validation rule must include academic_year, school_level, reference, and version."
+    ]
+  },
+  "common": {
+    "deployment": "online-authorized",
+    "entities": {
+      "users": {"pk": "id", "fields": {"id": "uuid", "display_name": "string", "org_email": "string:unique", "active": "boolean", "created_at": "timestamp"}},
+      "units": {"pk": "id", "fields": {"id": "uuid", "name": "string", "parent_id": "uuid|null", "kind": "enum:school|department|grade|subject"}},
+      "memberships": {"pk": "id", "fields": {"id": "uuid", "user_id": "ref:users.id", "unit_id": "ref:units.id", "role": "enum:school_admin|module_admin|owner|member|reader", "valid_from": "date", "valid_to": "date|null"}},
+      "academic_terms": {"pk": "id", "fields": {"id": "uuid", "academic_year": "integer", "semester": "integer", "starts_on": "date", "ends_on": "date"}},
+      "work_items": {"pk": "id", "fields": {"id": "uuid", "source_module": "string", "source_id": "uuid", "assignee_id": "ref:users.id", "title": "string", "due_at": "timestamp|null", "status": "enum:todo|in_progress|needs_confirmation|done|archived", "completed_at": "timestamp|null"}},
+      "file_refs": {"pk": "id", "fields": {"id": "uuid", "owner_id": "ref:users.id", "storage_key": "string", "access_scope": "json", "checksum": "sha256", "retention_policy": "string"}},
+      "templates": {"pk": "id", "fields": {"id": "uuid", "module": "string", "name": "string", "version": "integer", "rules_json": "json", "active": "boolean"}},
+      "audit_events": {"pk": "id", "fields": {"id": "uuid", "actor_id": "ref:users.id", "action": "string", "target_type": "string", "target_id": "uuid", "created_at": "timestamp", "result": "enum:success|deny|error", "summary_json": "json:redacted"}},
+      "outbox_messages": {"pk": "id", "fields": {"id": "uuid", "recipient_id": "ref:users.id", "channel": "string", "delivery_state": "enum:draft|queued|sent|failed|unknown", "attempted_at": "timestamp|null"}}
+    }
+  },
+  "modules": {
+    "responses": {
+      "mode": "online-authorized",
+      "entities": {
+        "response_campaign": {"id": "uuid", "title": "string", "owner_id": "ref:users.id", "opens_at": "timestamp", "due_at": "timestamp", "anonymous": "boolean", "status": "enum:draft|open|closed|archived", "revision": "integer"},
+        "response_question": {"id": "uuid", "campaign_id": "ref:response_campaign.id", "kind": "enum:boolean|single|multiple|text|date|number|file", "required": "boolean", "label": "string", "options": "json|null", "sort_order": "integer"},
+        "response_target": {"id": "uuid", "campaign_id": "ref:response_campaign.id", "user_id": "ref:users.id", "delivery_state": "enum:not_sent|sent|failed|unknown"},
+        "response_submission": {"id": "uuid", "campaign_id": "ref:response_campaign.id", "respondent_id": "uuid|null", "submitted_at": "timestamp", "revision": "integer"},
+        "response_answer": {"id": "uuid", "submission_id": "ref:response_submission.id", "question_id": "ref:response_question.id", "value": "json"},
+        "response_reminder": {"id": "uuid", "campaign_id": "ref:response_campaign.id", "target_id": "ref:response_target.id", "sent_at": "timestamp|null", "delivery_result": "enum:sent|failed|unknown"}
+      },
+      "constraints": ["Unique effective submission per identified respondent per campaign unless versioned edits are permitted", "Anonymous submissions must not store a respondent identifier or identifying answer metadata", "Do not claim delivery when only message text was copied"]
+    },
+    "grading": {
+      "mode": "offline-isolated",
+      "entities": {
+        "assessment": {"id": "uuid", "academic_year": "integer", "term": "integer", "grade": "integer", "subject": "string", "title": "string", "max_score_units": "integer", "base_score_units": "integer", "scale_units_per_point": "integer", "rubric_version": "integer", "policy_ref": "string"},
+        "student": {"id": "uuid", "local_student_key": "string", "class_no": "integer", "number": "integer", "name_optional": "string|null"},
+        "rubric_criterion": {"id": "uuid", "assessment_id": "ref:assessment.id", "item_no": "integer", "label": "string", "max_score_units": "integer", "steps": "json", "sort_order": "integer"},
+        "score_entry": {"id": "uuid", "assessment_id": "ref:assessment.id", "student_id": "ref:student.id", "criterion_id": "ref:rubric_criterion.id", "points_units": "integer|null", "status": "enum:ungraded|graded|absent|requires_policy_review", "reason": "string|null", "updated_at": "timestamp"},
+        "feedback": {"id": "uuid", "assessment_id": "ref:assessment.id", "student_id": "ref:student.id", "text": "string", "teacher_approved": "boolean"},
+        "score_history": {"id": "uuid", "score_entry_id": "ref:score_entry.id", "before": "json", "after": "json", "changed_at": "timestamp"}
+      },
+      "constraints": ["Use integer score units to avoid floating-point error", "Absence or recognition state is not automatically zero", "No plaintext student data in logs or service worker cache"]
+    },
+    "meetings": {
+      "mode": "online-authorized",
+      "entities": {
+        "meeting": {"id": "uuid", "title": "string", "kind": "string", "organizer_id": "ref:users.id", "starts_at": "timestamp", "ends_at": "timestamp", "location": "string", "status": "enum:planned|held|closed|cancelled"},
+        "meeting_attendee": {"id": "uuid", "meeting_id": "ref:meeting.id", "user_id": "ref:users.id", "rsvp": "enum:yes|no|unknown", "attendance": "enum:present|absent|delegate|unknown"},
+        "agenda_item": {"id": "uuid", "meeting_id": "ref:meeting.id", "author_id": "ref:users.id", "title": "string", "body": "string", "order": "integer"},
+        "meeting_decision": {"id": "uuid", "meeting_id": "ref:meeting.id", "agenda_id": "ref:agenda_item.id", "state": "enum:decided|held|review", "text": "string"},
+        "meeting_action": {"id": "uuid", "decision_id": "ref:meeting_decision.id", "assignee_id": "ref:users.id", "due_at": "timestamp|null", "status": "enum:todo|doing|done"},
+        "meeting_minutes": {"id": "uuid", "meeting_id": "ref:meeting.id", "body": "json", "version": "integer", "confirmed_at": "timestamp|null"}
+      }
+    },
+    "record_review": {
+      "mode": "offline-isolated",
+      "entities": {
+        "record_batch": {"id": "uuid", "academic_year": "integer", "term": "integer", "school_level": "enum:middle|high|elementary", "source_format": "string"},
+        "record_entry": {"id": "uuid", "batch_id": "ref:record_batch.id", "student_key": "string", "field_type": "string", "original_text": "string", "edited_text": "string|null"},
+        "record_rule": {"id": "uuid", "code": "string", "academic_year": "integer", "school_level": "string", "field_type": "string", "severity": "enum:high|review|info", "pattern_or_config": "json", "source_title": "string", "source_url": "string", "version": "string", "valid_from": "date"},
+        "record_finding": {"id": "uuid", "entry_id": "ref:record_entry.id", "rule_id": "ref:record_rule.id", "start_offset": "integer", "end_offset": "integer", "message": "string", "status": "enum:open|accepted|dismissed"},
+        "record_revision": {"id": "uuid", "entry_id": "ref:record_entry.id", "before_hash": "sha256", "after_hash": "sha256", "changed_at": "timestamp"}
+      },
+      "constraints": ["No definitive legal conclusion based on heuristics", "Always show rule source and version", "Explain byte counting and its limits"]
+    },
+    "training": {
+      "mode": "online-authorized",
+      "entities": {
+        "training": {"id": "uuid", "title": "string", "organizer_id": "ref:users.id", "starts_at": "timestamp", "ends_at": "timestamp", "capacity": "integer|null", "enrollment_deadline": "timestamp", "status": "enum:draft|open|closed|completed"},
+        "training_session": {"id": "uuid", "training_id": "ref:training.id", "starts_at": "timestamp", "ends_at": "timestamp"},
+        "training_enrollment": {"id": "uuid", "training_id": "ref:training.id", "user_id": "ref:users.id", "status": "enum:applied|waitlisted|approved|cancelled"},
+        "training_attendance": {"id": "uuid", "session_id": "ref:training_session.id", "user_id": "ref:users.id", "status": "enum:present|absent|unknown", "verified_by": "ref:users.id|null", "verified_at": "timestamp|null"},
+        "training_material": {"id": "uuid", "training_id": "ref:training.id", "file_id": "ref:file_refs.id"}
+      },
+      "constraints": ["QR alone is not sufficient attendance verification", "Internal attendance is not official course completion certification"]
+    },
+    "handover": {
+      "mode": "online-authorized",
+      "entities": {
+        "duty": {"id": "uuid", "title": "string", "unit_id": "ref:units.id", "description": "string", "owner_role": "string", "active": "boolean"},
+        "duty_step": {"id": "uuid", "duty_id": "ref:duty.id", "order": "integer", "instruction": "string", "reference_url": "string|null"},
+        "duty_schedule": {"id": "uuid", "duty_id": "ref:duty.id", "trigger_rule": "json", "notify_days_before": "integer|null"},
+        "handover_packet": {"id": "uuid", "from_user_id": "ref:users.id", "to_user_id": "ref:users.id", "academic_year": "integer", "status": "enum:draft|review|acknowledged|archived"},
+        "handover_item": {"id": "uuid", "packet_id": "ref:handover_packet.id", "duty_id": "ref:duty.id", "progress": "string", "open_issues": "string|null"},
+        "handover_ack": {"id": "uuid", "packet_id": "ref:handover_packet.id", "user_id": "ref:users.id", "ack_at": "timestamp"}
+      },
+      "constraints": ["No credentials or secrets in handover documentation", "Transfer of access rights requires separate authorized approval"]
+    },
+    "document_check": {
+      "mode": "offline-isolated",
+      "entities": {
+        "document_type": {"id": "uuid", "name": "string", "category": "string", "template_version": "string", "local_policy_ref": "string|null"},
+        "document_rule": {"id": "uuid", "type_id": "ref:document_type.id", "code": "string", "condition": "json", "severity": "enum:high|review|info", "source_ref": "string|null"},
+        "document_job": {"id": "uuid", "type_id": "ref:document_type.id", "created_at": "timestamp", "source_hash": "sha256", "source_format": "string"},
+        "document_attachment": {"id": "uuid", "job_id": "ref:document_job.id", "filename": "string", "mime_type": "string", "hash": "sha256"},
+        "document_finding": {"id": "uuid", "job_id": "ref:document_job.id", "rule_id": "ref:document_rule.id", "outcome": "enum:pass|needs_review|not_determinable|not_applicable", "review_status": "enum:open|resolved|dismissed"}
+      },
+      "constraints": ["Do not claim unavailable HWP or scanned PDF parsing", "Checking a document is not official administrative approval", "Never treat not_determinable as pass"]
+    }
+  }
+}

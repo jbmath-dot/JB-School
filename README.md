@@ -68,7 +68,11 @@ JB-School/
 
 ## 추천 GitHub 저장소
 
-`jbmath-dot/jb-school` (신규, **비공개**로 생성 권장). 현재 연결된 GitHub 기능에는 새 저장소 생성이 지원되지 않아 **원격 저장소는 생성하지 않았습니다**. `docs/GITHUB_SETUP.md`에 등록 방법을 적었습니다. 사용자가 새 빈 저장소를 생성하거나 저장소를 연결하면 별도 개발을 이어갈 수 있습니다.
+현재 저장소: [`jbmath-dot/JB-School`](https://github.com/jbmath-dot/JB-School) (공개 저장소). 샘플 자료만 업로드하고, 실제 개인정보와 비공개 문서는 입력하거나 커밋하지 마세요.
+
+## 배포
+
+GitHub Pages 배포 workflow를 포함했습니다. Settings → Pages → Build and deployment → Source에서 `GitHub Actions`를 선택하고 Actions 실행 결과를 확인하세요. 배포가 확인된 후에만 `https://jbmath-dot.github.io/JB-School/`을 이용하세요.
 
 ## 사용권한
 

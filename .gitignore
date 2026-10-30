@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+*.sqlite
+*.db
+private/
+exports/
+student-data/
+credentials*
+secrets*
