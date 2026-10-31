@@ -19,4 +19,7 @@ jobs:
       - run: node --check src/modules-ui.js
       - run: node --check src/extra-core.js
       - run: node --check src/extra-ui.js
+      - run: node --check src/ops-core.js
+      - run: node --check src/ops-ui.js
+      - run: node --check src/xlsx-reader.js
       - run: node --test tests/*.test.cjs

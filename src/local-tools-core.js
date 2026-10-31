@@ -4,22 +4,25 @@
 const MAX_BACKUP_BYTES = 4 * 1024 * 1024;
 const esc = v => {let s=String(v??'');if(/^\s*[=+@\-\t\r]/.test(s))s="'"+s;return /[,"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
 function makeCsv(rows){return '\ufeff'+rows.map(row=>row.map(esc).join(',')).join('\r\n');}
-function makeBundle(responses,modules,extras){
+function makeBundle(responses,modules,extras,ops){
  root.JBSchoolCore.validateImport(responses);
  root.JBSchoolModulesCore.validateState(modules);
  if(extras)root.JBSchoolExtraCore.normalize(extras);
- return {format:'jb-school-local-backup',version:extras?2:1,exportedAt:new Date().toISOString(),responses,modules,...(extras?{extras}:{})};
+ if(ops)root.JBSchoolOpsCore.normalize(ops);
+ let timetable;try{const raw=root.localStorage?.getItem('jb-school-timetable-v1');if(raw){const obj=JSON.parse(raw);if(obj?.format==='jb-school-timetable-project'&&obj.version===1)timetable=obj;}}catch(_){}
+ return {format:'jb-school-local-backup',version:timetable?4:ops?3:extras?2:1,exportedAt:new Date().toISOString(),responses,modules,...(extras?{extras}:{}),...(ops?{ops}:{}),...(timetable?{timetable}:{})};
 }
 function parseBundle(raw){
  if(typeof raw!=='string'||new TextEncoder().encode(raw).length>MAX_BACKUP_BYTES)throw new Error('백업 용량이 4MB를 초과합니다.');
  let d;try{d=JSON.parse(raw);}catch(_){throw new Error('JSON 파일을 해석할 수 없습니다.');}
- if(!d||d.format!=='jb-school-local-backup'||![1,2].includes(d.version))throw new Error('JB School 통합 백업 파일이 아닙니다.');
+ if(!d||d.format!=='jb-school-local-backup'||![1,2,3,4].includes(d.version))throw new Error('JB School 통합 백업 파일이 아닙니다.');
  root.JBSchoolCore.validateImport(d.responses);
  root.JBSchoolModulesCore.validateState(d.modules);
- if(d.version===2)root.JBSchoolExtraCore.normalize(d.extras);
+ if(d.version>=2)root.JBSchoolExtraCore.normalize(d.extras);
+ if(d.version>=3)root.JBSchoolOpsCore.normalize(d.ops);if(d.timetable&&(d.timetable.format!=='jb-school-timetable-project'||d.timetable.version!==1))throw Error('시간표 백업 형식이 잘못됐습니다.');
  return d;
 }
-function describeBundle(bundle){return {campaigns:bundle.responses.campaigns.length,meetings:bundle.modules.meetings.length,trainings:bundle.modules.trainings.length,grading:bundle.modules.grading.entries.length,handover:bundle.modules.handover.length,...(bundle.extras?{extras:Object.values(bundle.extras.modules).reduce((a,x)=>a+x.length,0)}:{})};}
+function describeBundle(bundle){return {campaigns:bundle.responses.campaigns.length,meetings:bundle.modules.meetings.length,trainings:bundle.modules.trainings.length,grading:bundle.modules.grading.entries.length,handover:bundle.modules.handover.length,...(bundle.extras?{extras:Object.values(bundle.extras.modules).reduce((a,x)=>a+x.length,0)}:{}),...(bundle.ops?{ops:Object.values(bundle.ops.modules).reduce((a,x)=>a+x.length,0)}:{}),...(bundle.timetable?{timetable:bundle.timetable.model?.lessons?.length||0}:{})};}
 function parseDelimited(raw,delimiter='\t',max=300){
  if(typeof raw!=='string'||raw.length>300000)throw new Error('입력 파일이 너무 큽니다.');
  const result=[];let cur='',row=[],quoted=false;

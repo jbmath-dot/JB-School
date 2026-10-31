@@ -1,0 +1,18 @@
+/* JB School shared style extensions for seven more modules */
+.ops-scroll{overflow-x:auto;max-width:100%;margin-top:12px}
+.ops-scroll .extra-table{min-width:580px}
+.ops-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin:14px 0 20px}
+.ops-stats>div{border:1px solid var(--line,#e4e9ef);border-radius:12px;background:var(--surface,#fafbfd);padding:15px}
+.ops-stats small{display:block;color:var(--muted,#617184);font-size:12px;margin-bottom:8px}
+.ops-stats strong{font-size:22px;color:var(--ink,#16233a);font-variant-numeric:tabular-nums}
+.ops-special{margin:20px 0;border:1px solid #c7d9e7;background:#f5f9fc;padding:16px;border-radius:12px}
+.ops-special h3{margin:0 0 8px}
+.ops-actions{white-space:nowrap}.ops-actions .btn{margin-right:4px}
+.ops-chart{padding:15px 0;border-top:1px solid #e7ecf2}
+.ops-chart>b{display:block;margin-bottom:4px}
+.ops-chart>small{color:#687b90}
+.ops-chart-row{display:grid;grid-template-columns:minmax(95px,1.2fr) minmax(90px,2fr) minmax(85px,1fr);align-items:center;gap:8px;font-size:13px;margin:10px 0}
+.ops-chart-row strong{font-size:12px;text-align:right}
+.ops-meter{height:9px;min-width:80px;background:#e7eef6;border-radius:99px;overflow:hidden}
+.ops-meter>span{display:block;height:100%;background:#3f89ad;border-radius:99px}
+@media(max-width:700px){.ops-chart-row{grid-template-columns:minmax(60px,1fr) minmax(60px,1.1fr) minmax(68px,1fr)}.ops-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
