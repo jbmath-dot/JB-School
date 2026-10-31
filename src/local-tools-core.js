@@ -4,20 +4,22 @@
 const MAX_BACKUP_BYTES = 4 * 1024 * 1024;
 const esc = v => {let s=String(v??'');if(/^\s*[=+@\-\t\r]/.test(s))s="'"+s;return /[,"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
 function makeCsv(rows){return '\ufeff'+rows.map(row=>row.map(esc).join(',')).join('\r\n');}
-function makeBundle(responses,modules){
+function makeBundle(responses,modules,extras){
  root.JBSchoolCore.validateImport(responses);
  root.JBSchoolModulesCore.validateState(modules);
- return {format:'jb-school-local-backup',version:1,exportedAt:new Date().toISOString(),responses,modules};
+ if(extras)root.JBSchoolExtraCore.normalize(extras);
+ return {format:'jb-school-local-backup',version:extras?2:1,exportedAt:new Date().toISOString(),responses,modules,...(extras?{extras}:{})};
 }
 function parseBundle(raw){
  if(typeof raw!=='string'||new TextEncoder().encode(raw).length>MAX_BACKUP_BYTES)throw new Error('백업 용량이 4MB를 초과합니다.');
  let d;try{d=JSON.parse(raw);}catch(_){throw new Error('JSON 파일을 해석할 수 없습니다.');}
- if(!d||d.format!=='jb-school-local-backup'||d.version!==1)throw new Error('JB School 통합 백업 파일이 아닙니다.');
+ if(!d||d.format!=='jb-school-local-backup'||![1,2].includes(d.version))throw new Error('JB School 통합 백업 파일이 아닙니다.');
  root.JBSchoolCore.validateImport(d.responses);
  root.JBSchoolModulesCore.validateState(d.modules);
+ if(d.version===2)root.JBSchoolExtraCore.normalize(d.extras);
  return d;
 }
-function describeBundle(bundle){return {campaigns:bundle.responses.campaigns.length,meetings:bundle.modules.meetings.length,trainings:bundle.modules.trainings.length,grading:bundle.modules.grading.entries.length,handover:bundle.modules.handover.length};}
+function describeBundle(bundle){return {campaigns:bundle.responses.campaigns.length,meetings:bundle.modules.meetings.length,trainings:bundle.modules.trainings.length,grading:bundle.modules.grading.entries.length,handover:bundle.modules.handover.length,...(bundle.extras?{extras:Object.values(bundle.extras.modules).reduce((a,x)=>a+x.length,0)}:{})};}
 function parseDelimited(raw,delimiter='\t',max=300){
  if(typeof raw!=='string'||raw.length>300000)throw new Error('입력 파일이 너무 큽니다.');
  const result=[];let cur='',row=[],quoted=false;
