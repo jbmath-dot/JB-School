@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <!-- Deliberately no INTERNET or storage/CAMERA permissions. -->
-  <application android:label="학급관리" android:icon="@drawable/ic_launcher"
+  <application android:label="${appLabel}" android:icon="@drawable/ic_launcher"
     android:allowBackup="false" android:fullBackupContent="false"
     android:usesCleartextTraffic="false" android:supportsRtl="true"
     android:theme="@android:style/Theme.Material.Light.NoActionBar">
