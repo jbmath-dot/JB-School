@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src blob: data:; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#f4f6fa">
 <title>학급 자리교체</title>
 <style>
@@ -141,6 +141,10 @@ textarea{width:100%;min-height:110px;resize:vertical}
   .pa-roster td.n{text-align:center;width:8mm}
 }
 </style>
+<link rel="stylesheet" href="themes.css">
+<script>
+try { document.documentElement.setAttribute('data-ui-theme', localStorage.getItem('jb-class-ui-theme-v1') || 'navy-gold'); } catch(e) { document.documentElement.setAttribute('data-ui-theme','navy-gold'); }
+</script>
 </head>
 <body>
 <div class="wrap">
