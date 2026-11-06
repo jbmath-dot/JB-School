@@ -1,0 +1,54 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>학급관리</title>
+<style>
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,'Malgun Gothic',sans-serif;background:#eef3f9;margin:0;color:#192b42}header{background:#17375d;color:white;padding:10px 12px}h1{font-size:1.14rem;margin:0}header small{font-size:.72rem;color:#cddded}nav{display:flex;gap:6px;background:#17375d;padding:5px 10px 8px}nav button{flex:1;background:#2c507b;color:#e0edff;border:0;border-radius:10px;min-height:44px;font:700 .88rem system-ui;cursor:pointer}nav button.active{background:#fff;color:#123a63}iframe{border:0;width:100%;height:calc(100dvh - 116px);display:none;background:#f6f8fb}iframe.active{display:block}.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0a1628aa;z-index:50;padding:10px}.overlay.open{display:flex}.dialog{width:min(97vw,630px);max-height:93dvh;overflow:auto;border-radius:17px;background:white;padding:16px;box-shadow:0 14px 55px #102a4866}.dialog h2{margin:0 0 6px;font-size:1.16rem}.help{font-size:.81rem;color:#60748c;line-height:1.55}.dialog textarea{width:100%;min-height:104px;border:1px solid #c5d1e2;border-radius:9px;padding:9px;font:inherit}.row{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.row button,.confirm{border:1px solid #bbcbdf;border-radius:10px;background:#f5f8fc;color:#223c61;padding:9px 12px;min-height:42px;font-weight:750;cursor:pointer}.row .primary,.confirm{background:#235aac;color:white;border-color:#235aac}.tablewrap{max-height:34vh;overflow:auto;margin:9px 0}.review{width:100%;border-collapse:collapse}.review td,.review th{padding:5px;border-bottom:1px solid #e3e8f0;font-size:.86rem;text-align:left}.review input{font:inherit;border:1px solid #cfd8e6;border-radius:7px;min-height:34px;padding:5px;width:100%;min-width:50px}.review td:first-child{font-weight:800;white-space:nowrap;width:50px}.notice{padding:9px;background:#f4f7fd;font-size:.81rem;color:#44617f;border-radius:9px}#warn{color:#a14339}
+</style></head><body>
+<header><h1>학급관리</h1><small>자리교체 · 출결 · 명렬 사진 인식 | 휴대폰 내부 저장</small></header>
+<nav><button id="bSeat" class="active">자리교체</button><button id="bAttend">출결 관리</button><button id="bPhoto">명렬 사진</button></nav>
+<iframe id="seatFrame" title="학급 자리교체" src="seat.html" class="active"></iframe><iframe id="attendanceFrame" title="학급 출결 관리" src="attendance.html"></iframe>
+<div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="photoTitle"><section class="dialog">
+<h2 id="photoTitle">명렬 사진 가져오기</h2><p class="help">명렬표를 촬영하거나 휴대폰 사진을 고르면 기기 안에서 한글을 인식합니다. 인식 후 번호와 이름을 꼭 검토하고 수정하세요. 사진은 외부로 전송되지 않습니다.</p>
+<div class="row"><button id="gallery" class="primary">사진 선택</button><button id="camera">사진 촬영</button><button id="close">닫기</button></div>
+<p class="help">① 인식된 문장 (필요하면 직접 수정)</p><textarea id="ocrText" placeholder="1 김하늘 반장&#10;2 이바다&#10;3 박푸름"></textarea>
+<div class="row"><button id="analyze">② 번호·이름 추출</button></div><p class="help" id="info"></p><div class="tablewrap" id="results"></div>
+<button class="confirm" id="apply" style="display:none">③ 검토한 명렬 반영</button><p class="notice" id="warn">확정 배치가 있으면 같은 번호의 이름이 출결에 반영됩니다. 사진 인식 오류는 반드시 확인하세요.</p>
+</section></div>
+<script>
+'use strict';const $=id=>document.getElementById(id), sf=$('seatFrame'),af=$('attendanceFrame');let view='seat';
+function read(k,fallback){try{return JSON.parse(localStorage.getItem(k))||fallback;}catch(e){return fallback;}}
+function show(name){view=name;sf.classList.toggle('active',name==='seat');af.classList.toggle('active',name==='attend');$('bSeat').classList.toggle('active',name==='seat');$('bAttend').classList.toggle('active',name==='attend');$('bPhoto').classList.toggle('active',name==='photo');if(name==='attend')sync();}
+function today(){let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function sync(){let seat=read('jb-seat-swap-v1',null);if(!seat||!seat.locked)return;
+ let sig=JSON.stringify([seat.lockRecordId,seat.count,seat.cols,seat.seats,seat.pairs,seat.names,seat.className]);if(sig===localStorage.getItem('jb-manager-last-seat'))return;
+ let count=seat.count,cols=seat.cols,arr=seat.seats;if(!Number.isInteger(count)||count<1||count>40||!Number.isInteger(cols)||cols<1||cols>10||!Array.isArray(arr)||arr.length!==Math.ceil(count/cols)*cols)return;
+ let l={source:'class-manager',effectiveFrom:today(),importedAt:new Date().toISOString(),className:seat.className||'',count,cols,seats:arr.slice(),pairs:(seat.pairs||[]).slice(),names:(seat.names||[]).slice(0,count)};
+ let db=read('jb-attendance-local-v2',{v:2,version:0,layouts:[],attendance:{},history:[],recentIds:[]});db.layouts=(db.layouts||[]).filter(x=>!(x.source==='class-manager'&&x.effectiveFrom===l.effectiveFrom));db.layouts.push(l);db.layouts.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom)||String(a.importedAt||'').localeCompare(String(b.importedAt||'')));
+ localStorage.setItem('jb-attendance-local-v2',JSON.stringify(db));localStorage.setItem('jb-manager-last-seat',sig);af.src='attendance.html';}
+$('bSeat').onclick=()=>show('seat');$('bAttend').onclick=()=>show('attend');$('bPhoto').onclick=()=>{$('overlay').classList.add('open')};
+$('close').onclick=()=>{$('overlay').classList.remove('open')};
+$('gallery').onclick=()=>{if(window.AndroidApp)AndroidApp.pickRosterPhoto('gallery');else $('info').textContent='사진 속 한글 인식은 APK에서 동작합니다. 텍스트를 직접 입력해 검토할 수 있습니다.'};
+$('camera').onclick=()=>{if(window.AndroidApp)AndroidApp.pickRosterPhoto('camera');else $('info').textContent='카메라 인식은 APK에서 지원합니다.'};
+window.receiveRosterOcr=(text,error)=>{$('overlay').classList.add('open');if(error){$('info').textContent='인식 오류: '+error;return;}$('ocrText').value=text||'';analyze()};
+function parse(text){let rows=[],bad=[],seen=new Set(),next=1;
+ function add(n,name,note,original){if(n<1||n>40||seen.has(n)){bad.push(original);return;}seen.add(n);rows.push({n,name,note});next=n+1;}
+ for(let line of String(text).split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
+  if(/^(번호|이름|성명|순번|비고|학년|학급|명렬|명단)/.test(line))continue;
+  let re=/(?:^|[\s\t,;])(\d{1,2})\s*(?:번|[.)\]:：-])?\s*([가-힣]{2,7})/g,ms=[],m;
+  while((m=re.exec(line)))ms.push({start:m.index,end:re.lastIndex,n:Number(m[1]),name:m[2]});
+  if(ms.length){ms.forEach((v,i)=>add(v.n,v.name,line.slice(v.end,i+1<ms.length?ms[i+1].start:line.length).trim(),line))}
+  else {let k=line.match(/^([가-힣]{2,7})(?:\s+(.+))?$/);if(k)add(next,k[1],k[2]||'',line);else bad.push(line)}
+ }
+ rows.sort((a,b)=>a.n-b.n);return{rows,bad};
+}
+function analyze(){let p=parse($('ocrText').value),area=$('results');area.replaceChildren();let t=document.createElement('table');t.className='review';let head=document.createElement('tr');['번호','이름','비고'].forEach(x=>{let c=document.createElement('th');c.textContent=x;head.append(c)});t.append(head);
+ p.rows.forEach(r=>{let tr=document.createElement('tr');tr.dataset.n=r.n;let n=document.createElement('td');n.textContent=r.n+'번';tr.append(n);for(let value of [r.name,r.note]){let td=document.createElement('td'),inp=document.createElement('input');inp.value=value;inp.maxLength=value===r.name?20:30;td.append(inp);tr.append(td)}t.append(tr)});
+ area.append(t);$('apply').style.display=p.rows.length?'':'none';$('info').textContent=p.rows.length+'명 인식'+(p.bad.length?' · 해석 못 한 줄 '+p.bad.length+'개 (텍스트를 수정해 다시 추출하세요)':'')+'.';}
+$('analyze').onclick=analyze;
+$('apply').onclick=()=>{let state=read('jb-seat-swap-v1',null);if(!state){alert('먼저 자리교체 화면에서 학급을 설정해 주세요.');return;}
+ let rows=[...$('results').querySelectorAll('tr[data-n]')].map(tr=>({n:Number(tr.dataset.n),name:tr.querySelectorAll('input')[0].value.trim(),note:tr.querySelectorAll('input')[1].value.trim()})).filter(r=>r.name);
+ if(!rows.length)return;let max=Math.max(...rows.map(r=>r.n));if(max>state.count){alert('현재 인원은 '+state.count+'명입니다. 자리교체에서 인원을 '+max+'명 이상으로 늘린 뒤 진행해 주세요.');return;}
+ if(!confirm(rows.length+'명의 명렬을 기존 이름에 덮어쓸까요?'))return;
+ rows.forEach(r=>{state.names[r.n-1]=r.name.slice(0,20);if(r.note)state.notes[r.n-1]=r.note.slice(0,30)});
+ localStorage.setItem('jb-seat-swap-v1',JSON.stringify(state));sf.src='seat.html';if(state.locked)sync();$('overlay').classList.remove('open');show('seat');alert(rows.length+'명의 명렬을 반영했습니다.');};
+window.addEventListener('message',e=>{if(e.source===sf.contentWindow&&e.origin===location.origin&&e.data?.type==='jb-seat-updated'&&e.data.locked)sync()});
+window.addEventListener('load',()=>{if(read('jb-seat-swap-v1',null)?.locked)show('attend')});
+</script></body></html>
