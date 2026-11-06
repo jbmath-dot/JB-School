@@ -29,10 +29,16 @@ jobs:
           gradle-version: '8.9'
       - name: Compile APK
         working-directory: class-manager-apk
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon assembleDebug assemblePreview
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: ClassManager-APK
           path: class-manager-apk/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+      - name: Upload safe side-by-side theme preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClassManager-ThemePreview-APK
+          path: class-manager-apk/app/build/outputs/apk/preview/app-preview.apk
           retention-days: 30
