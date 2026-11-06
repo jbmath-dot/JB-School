@@ -56,9 +56,10 @@ public class MainActivity extends Activity {
         Uri u=r.getUrl(),dummy=null;
         if(!HOST.equals(u.getScheme()+"://"+u.getAuthority()))return deny();
         String path=u.getPath(),name=path!=null&&path.startsWith("/assets/")?path.substring(8):"";
-        if(!Arrays.asList("index.html","seat.html","attendance.html").contains(name))return deny();
+        if(!Arrays.asList("index.html","seat.html","attendance.html","themes.css").contains(name))return deny();
         try{
-          WebResourceResponse response=new WebResourceResponse("text/html","utf-8",getAssets().open(name));
+          String mime=name.endsWith(".css")?"text/css":"text/html";
+          WebResourceResponse response=new WebResourceResponse(mime,"utf-8",getAssets().open(name));
           response.setResponseHeaders(Collections.singletonMap("Cache-Control","no-store"));
           return response;
         }catch(IOException e){return deny();}
@@ -87,6 +88,34 @@ public class MainActivity extends Activity {
   }
 
   private class LocalBridge {
+    @JavascriptInterface public void setThemeBars(String id) {
+      final String color;
+      final boolean dark;
+      switch(String.valueOf(id)){
+        case "neon": color="#070f1e"; dark=true; break;
+        case "navy-gold": color="#0d274c"; dark=true; break;
+        case "classroom": color="#205c40"; dark=true; break;
+        case "indigo-peach": color="#5555a4"; dark=true; break;
+        case "glass": color="#357bd8"; dark=true; break;
+        case "lavender": color="#e9d9ff"; dark=false; break;
+        case "notebook": color="#fff2dd"; dark=false; break;
+        case "mint": color="#d0fff2"; dark=false; break;
+        case "sky-coral": color="#a7e1fc"; dark=false; break;
+        default: color="#f9fafc"; dark=false;
+      }
+      runOnUiThread(()->{
+        getWindow().setStatusBarColor(android.graphics.Color.parseColor(color));
+        getWindow().setNavigationBarColor(android.graphics.Color.parseColor(dark?"#081426":"#ffffff"));
+        int flags=web.getSystemUiVisibility();
+        if(dark) flags &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        else flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if(android.os.Build.VERSION.SDK_INT>=26){
+          if(dark)flags &= ~android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+          else flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        web.setSystemUiVisibility(flags);
+      });
+    }
     @JavascriptInterface public void pickRosterPhoto(String which) {
       runOnUiThread(()->{if("camera".equals(which))capturePhoto();else selectPhoto();});
     }
