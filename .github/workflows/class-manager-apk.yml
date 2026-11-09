@@ -1,14 +1,14 @@
-name: 학급관리 APK 검사 및 기존 키로 업데이트 빌드
+name: 학급관리 APK 검사 및 고정 키 업데이트 빌드
 on:
   push:
-    branches: [feature/class-manager-apk-20261107]
+    branches: [main, feature/class-manager-apk-20261107]
     paths:
       - 'class-manager-apk/**'
       - '.github/workflows/class-manager-apk.yml'
   workflow_dispatch:
     inputs:
       build_signed_update:
-        description: '기존 서명 키 검증 후 정식 업데이트 APK 빌드 (Repository Secrets 필수)'
+        description: '저장된 고정 서명 키를 검증하고 정식 업데이트 APK 빌드 (Repository Secrets 필수)'
         required: true
         type: boolean
         default: false
