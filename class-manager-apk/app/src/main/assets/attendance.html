@@ -383,6 +383,84 @@ function renderMonthly(){const l=getLayout(month+'-15');const t=$('monthTable');
  head+=`<tr><td>${escapeHtml(n+'번 '+(l.names[n-1]||''))}</td><td>${counts.absence}</td><td>${counts.late}</td><td>${counts.early}</td><td>${counts.missed}</td><td>${counts.recognized}</td></tr>`;}
  t.innerHTML=head+'</tbody></table>';
 }
+
+/* 학생별/날짜별 통계용 행 모델. 정렬 기준은 선택한 날짜와 무관하며 과거부터 표시한다. */
+function historyRows(data,filterMonth,resolveLayout){
+ const rows=[];
+ for(const date of Object.keys(data.attendance||{}).filter(isValidDay).sort()){
+  if(filterMonth&&!date.startsWith(filterMonth+'-'))continue;
+  const items=data.attendance[date]||{},layout=resolveLayout(date);
+  for(const n of Object.keys(items).map(Number).filter(x=>Number.isSafeInteger(x)&&x>=1&&x<=40).sort((a,b)=>a-b)){
+   const c=items[n];
+   if(!c||!statuses[c.status]||c.status==='unrecorded')continue;
+   rows.push({date,n,name:String(layout?.names?.[n-1]||'').slice(0,30),status:c.status,reason:c.reason||'',detailReason:c.detailReason||'',periods:c.status==='absence'?PERIODS.slice():normalizePeriods(c.periods),memo:c.memo||''});
+  }
+ }
+ return rows;
+}
+function sortHistoryRows(rows,view){
+ const result=rows.slice();
+ if(view==='student')result.sort((a,b)=>a.n-b.n||a.date.localeCompare(b.date));
+ else result.sort((a,b)=>a.date.localeCompare(b.date)||a.n-b.n);
+ return result;
+}
+function switchTab(name){
+ activeTab=name;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ $('todayPane').hidden=name!=='today';$('monthPane').hidden=name!=='month';$('recordsPane').hidden=name!=='records';
+ if(name==='month')renderMonthly();
+ if(name==='records')renderRecordStats();
+}
+function renderRecordStats(){
+ const scope=$('recordScopeSelect').value,filterMonth=scope==='month'?$('recordMonthInput').value:'';
+ const mode=$('recordViewSelect').value;
+ const rows=sortHistoryRows(historyRows(db,filterMonth,date=>getLayout(date)),mode);
+ const countDates=new Set(rows.map(r=>r.date)).size,countStudents=new Set(rows.map(r=>r.n)).size;
+ $('recordStats').textContent='표시 순서: '+(mode==='student'?'학생 번호 오름차순 → 학생별 날짜 과거순':'날짜 과거순 → 날짜별 학생 번호 오름차순')+' · '+rows.length+'건 · '+countStudents+'명 · '+countDates+'일';
+ const container=$('recordTable');container.replaceChildren();
+ if(!rows.length){let empty=document.createElement('p');empty.className='emptymsg';empty.textContent='해당 조건에 저장된 출결 기록이 없습니다.';container.append(empty);return;}
+ const groups=new Map();
+ for(const r of rows){const key=mode==='student'?String(r.n):r.date;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
+ for(const [key,entries] of groups){
+  const section=document.createElement('section');section.className='record-group';
+  const header=document.createElement('h3');
+  header.textContent=(mode==='student'?key+'번 '+(entries[0].name||'학생')+' · 날짜 과거순':key+' · 학생 번호순')+' · '+entries.length+'건';
+  section.append(header);
+  for(const row of entries){
+   const item=document.createElement('button');item.type='button';item.className='record-row';
+   const p=document.createElement('span');p.className='record-primary';p.textContent=mode==='student'?row.date:row.n+'번 '+(row.name||'학생');
+   const status=document.createElement('span');status.textContent=statusName(row);
+   const detail=document.createElement('span');detail.className='record-detail';
+   const bits=[row.detailReason,...(row.periods.length?[row.periods.join('·')]:[]),...(row.memo?[row.memo]:[])].filter(Boolean);
+   detail.textContent=bits.length?bits.join(' / '):'교시·세부 사유 없음';
+   item.append(p,status,detail);
+   item.addEventListener('click',()=>{changeDate(row.date,true);switchTab('today');if(!isDateClosed(row.date))openEditor(row.n);else toast(row.date+'은 저장 마감 상태입니다. 마감을 해제해야 수정할 수 있습니다.');});
+   section.append(item);
+  }
+  container.append(section);
+ }
+}
+/* 날짜 범위를 미리 계산해 지우는 날짜와 레코드 수를 삭제 전에 정확히 보여준다. */
+function planBulkDelete(data,scope,selected,from,to,includeClosed){
+ if(scope==='range'&&(!isValidDay(from)||!isValidDay(to)||from>to))return {dates:[],records:0,closedExcluded:0,error:'시작일과 종료일을 올바르게 입력하세요.'};
+ const all=new Set([...Object.keys(data.attendance||{}),...Object.keys(data.closedDates||{})].filter(isValidDay));
+ const matching=[...all].sort().filter(date=>scope==='all'||scope==='selected'&&date===selected||scope==='range'&&date>=from&&date<=to);
+ const closedExcluded=matching.filter(date=>isDateClosed(date,data)&&!includeClosed).length;
+ const dates=matching.filter(date=>includeClosed||!isDateClosed(date,data));
+ const records=dates.reduce((sum,d)=>sum+Object.keys(data.attendance?.[d]||{}).length,0);
+ return {dates,records,closedExcluded,error:''};
+}
+function currentBulkPlan(){
+ return planBulkDelete(db,$('bulkScope').value,syncDateFromControl(),$('bulkFrom').value,$('bulkTo').value,$('bulkIncludeClosed').checked);
+}
+function renderBulkPreview(){
+ $('bulkRange').hidden=$('bulkScope').value!=='range';
+ if(!$('bulkFrom').value)$('bulkFrom').value=selectedDate;
+ if(!$('bulkTo').value)$('bulkTo').value=selectedDate;
+ const plan=currentBulkPlan();
+ $('bulkPreview').textContent=plan.error||('삭제 대상: '+plan.dates.length+'일 · 출결 '+plan.records+'건'+(plan.closedExcluded?' · 마감되어 제외된 날짜 '+plan.closedExcluded+'일':'')+'. 자리배치는 유지됩니다.');
+ $('bulkDelete').disabled=!!plan.error||!plan.dates.length||mode==='lan';
+}
+
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function openEditor(n){syncDateFromControl();if(mode==='lan'&&!secret){showLogin();return;}if(isDateClosed(selectedDate)){toast(selectedDate+' 출결은 마감되었습니다. 마감 해제 후 수정할 수 있습니다.');return;}const l=getLayout();if(!l)return;const cell=getCell(selectedDate,n);editing={date:selectedDate,n,baseRev:cell?.rev||0};$('editTitle').textContent=`${n}번 ${l.names[n-1]||'학생'}`;$('editDate').textContent=selectedDate+' 출결 입력 · 이전 날짜도 수정할 수 있습니다.';
  $('statusSelect').value=cell?.status||'unrecorded';$('reasonSelect').value=cell?.reason||'illness';$('timeField').value=cell?.time||'';$('memoField').value=cell?.memo||'';
