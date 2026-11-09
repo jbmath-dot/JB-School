@@ -1,4 +1,4 @@
-name: Build 학급관리 APK
+name: 학급관리 APK 검사 및 기존 키로 업데이트 빌드
 on:
   push:
     branches: [feature/class-manager-apk-20261107]
@@ -6,8 +6,15 @@ on:
       - 'class-manager-apk/**'
       - '.github/workflows/class-manager-apk.yml'
   workflow_dispatch:
+    inputs:
+      build_signed_update:
+        description: '기존 서명 키 검증 후 정식 업데이트 APK 빌드 (Repository Secrets 필수)'
+        required: true
+        type: boolean
+        default: false
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,21 +34,96 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Validate attendance periods and reasons
+      - name: Test attendance logic
         working-directory: class-manager-apk
         run: node --test tests/*.test.cjs
-      - name: Compile APK
+      - name: Compile debug and separate-package preview (test only)
         working-directory: class-manager-apk
         run: gradle --no-daemon assembleDebug assemblePreview
-      - name: Upload APK
+      - name: Upload separate-package preview (NOT an update)
         uses: actions/upload-artifact@v4
         with:
-          name: ClassManager-APK
-          path: class-manager-apk/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
-      - name: Upload safe side-by-side theme preview
-        uses: actions/upload-artifact@v4
-        with:
-          name: ClassManager-ThemePreview-APK
+          name: ClassManager-Preview-NOT-AN-UPDATE
           path: class-manager-apk/app/build/outputs/apk/preview/app-preview.apk
+          retention-days: 7
+
+  signed-update:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_signed_update == true }}
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android platform
+        run: |
+          SDKMANAGER="$(find /usr/local/lib/android/sdk/cmdline-tools -path '*/bin/sdkmanager' -type f | head -n 1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Recover original signing key and verify original certificate
+        env:
+          CM_SIGNING_KEYSTORE_BASE64: ${{ secrets.CM_SIGNING_KEYSTORE_BASE64 }}
+          CM_SIGNING_STORE_PASSWORD: ${{ secrets.CM_SIGNING_STORE_PASSWORD }}
+          CM_SIGNING_KEY_ALIAS: ${{ secrets.CM_SIGNING_KEY_ALIAS }}
+          CM_SIGNING_EXPECTED_SHA256: ${{ secrets.CM_SIGNING_EXPECTED_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CM_SIGNING_KEYSTORE_BASE64:?Missing original signing keystore secret}"
+          : "${CM_SIGNING_STORE_PASSWORD:?Missing keystore password secret}"
+          : "${CM_SIGNING_KEY_ALIAS:?Missing alias secret}"
+          : "${CM_SIGNING_EXPECTED_SHA256:?Missing fingerprint of the installed APK}"
+          umask 077
+          printf '%s' "$CM_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/class-manager-original.jks"
+          actual="$(keytool -list -v -keystore "$RUNNER_TEMP/class-manager-original.jks" -storepass:env CM_SIGNING_STORE_PASSWORD -alias "$CM_SIGNING_KEY_ALIAS" | awk '/SHA256:/{print $2;exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          expected="$(printf '%s' "$CM_SIGNING_EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          if [[ -z "$actual" || "$actual" != "$expected" ]]; then
+            echo "::error::Keystore certificate does not match the installed APK. Refusing an incompatible update."
+            exit 1
+          fi
+          echo "Confirmed original signing certificate fingerprint: $actual"
+      - name: Build signed release APK with existing private key
+        working-directory: class-manager-apk
+        env:
+          CM_SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/class-manager-original.jks
+          CM_SIGNING_STORE_PASSWORD: ${{ secrets.CM_SIGNING_STORE_PASSWORD }}
+          CM_SIGNING_KEY_ALIAS: ${{ secrets.CM_SIGNING_KEY_ALIAS }}
+          CM_SIGNING_KEY_PASSWORD: ${{ secrets.CM_SIGNING_KEY_PASSWORD }}
+          CM_SIGNING_STORE_TYPE: ${{ secrets.CM_SIGNING_STORE_TYPE }}
+        run: gradle --no-daemon assembleRelease
+      - name: Verify signed APK package and signing certificate
+        env:
+          CM_SIGNING_EXPECTED_SHA256: ${{ secrets.CM_SIGNING_EXPECTED_SHA256 }}
+        working-directory: class-manager-apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          apksigner="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          aapt="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$apksigner" verify --verbose "$apk"
+          fingerprint="$("$apksigner" verify --print-certs "$apk" | awk -F ': ' '/Signer #1 certificate SHA-256 digest:/{print $2;exit}' | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          expected="$(printf '%s' "$CM_SIGNING_EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          [[ "$fingerprint" == "$expected" ]] || { echo "::error::Final APK signature mismatch."; exit 1; }
+          info="$("$aapt" dump badging "$apk" | head -n 1)"
+          [[ "$info" == *"name='kr.jbmath.classmanager'"* ]] || { echo "::error::Package name has changed."; exit 1; }
+          echo "Verified same package and original certificate; signed update APK ready."
+      - name: Upload verified signed update APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClassManager-SIGNED-UPDATE
+          path: class-manager-apk/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+      - name: Delete temporary signing keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/class-manager-original.jks"
