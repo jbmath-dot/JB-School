@@ -159,6 +159,11 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
   <div class="actions"><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
   <p class="help">교시 미참여 표시는 나이스 입력을 돕는 참고 기록입니다. 같은 날 복합 출결과 출석인정의 최종 처리는 학교 규정에 따라 확인해야 합니다.</p><p class="help" id="editUpdated"></p>
 </div></div>
+<div class="overlay" id="bulkConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="bulkConfirmTitle"><div class="dialog">
+    <h2 id="bulkConfirmTitle">출결 일괄 삭제 최종 확인</h2><p class="help" id="bulkConfirmSummary"></p>
+    <div class="field"><label for="bulkConfirmWord">삭제하려면 아래에 <b>삭제</b>라고 입력하세요.</label><input id="bulkConfirmWord" type="text" autocomplete="off" placeholder="삭제"></div>
+    <div class="actions"><button type="button" class="btn" id="bulkConfirmCancel">취소</button><button type="button" class="btn danger" id="bulkConfirmExecute" disabled>영구 삭제</button></div>
+  </div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
 'use strict';
@@ -329,8 +334,21 @@ function doOp(op){op.id=newId();
 function render(){const layout=getLayout();$('dateInput').value=selectedDate;$('monthInput').value=month;$('effectiveInput').value=$('effectiveInput').value||selectedDate;
  const dt=new Date(selectedDate+'T12:00:00');$('dayName').textContent=`${['일','월','화','수','목','금','토'][dt.getDay()]}요일 · ${selectedDate===today()?'오늘 날짜 자동 적용':'지난날·선택 날짜 수정 가능'}`;
  $('classSubtitle').textContent=layout?`${layout.className||'학급'} · ${layout.count}명 · ${layout.cols}분단`:'확정 자리배치를 가져와 시작하세요';
- $('layoutCount').textContent=(db.layouts||[]).length?`${db.layouts.length}개 시기 등록`:'등록 안 됨';$('markAll').disabled=!layout;
- renderStats(layout);renderBoard(layout);renderList(layout);renderTodaySummary(layout);if(activeTab==='month')renderMonthly();}
+ $('layoutCount').textContent=(db.layouts||[]).length?`${db.layouts.length}개 시기 등록`:'등록 안 됨';
+ const finalized=db.closedDates?.[selectedDate],recordCount=Object.keys(db.attendance?.[selectedDate]||{}).length;
+ $('markAll').disabled=!layout||!!finalized;
+ $('finalizeDate').hidden=!!finalized;
+ $('finalizeDate').disabled=!layout||mode==='lan';
+ $('reopenDate').hidden=!finalized;
+ $('reopenDate').disabled=mode==='lan';
+ const work=$('dateWorkStatus');
+ work.classList.toggle('closed',!!finalized);
+ work.textContent=selectedDate+' · '+(finalized?'저장 마감 완료 ('+new Date(finalized.closedAt).toLocaleString('ko-KR')+') · 수정 잠김':'입력·수정 가능')+' · 저장된 출결 '+recordCount+'건';
+ renderStats(layout);renderBoard(layout);renderList(layout);renderTodaySummary(layout);
+ if(activeTab==='month')renderMonthly();
+ if(activeTab==='records')renderRecordStats();
+ renderBulkPreview();
+}
 function renderStats(l){const s={present:0,unrecorded:0,absence:0,late:0,early:0,missed:0,recognized:0};
  if(l)for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n),key=c?.reason==='recognized'&&!['unrecorded','present'].includes(c.status)?'recognized':c&&statuses[c.status]?c.status:'unrecorded';s[key]++;}
  $('stats').innerHTML=[['출석',s.present,'good'],['출석인정',s.recognized,'good'],['미입력',s.unrecorded,''],['결석',s.absence,'danger'],['지각',s.late,''],['조퇴',s.early,''],['결과',s.missed,'']].map(([name,n,cl])=>`<div class="stat ${cl}"><div class="n">${n}</div><div class="lab">${name}</div></div>`).join('');}
