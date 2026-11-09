@@ -14,8 +14,14 @@ function PutSecret([string]$Name,[string]$Value) {
 }
 if(-not (Get-Command keytool -ErrorAction SilentlyContinue)) { throw "Install JDK (keytool) first." }
 if(-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "Install GitHub CLI and run gh auth login." }
+& gh auth status 2>$null
+if($LASTEXITCODE -ne 0){
+  Write-Host "GitHub CLI 로그인이 필요합니다. 브라우저 인증을 시작합니다."
+  & gh auth login --hostname github.com --web --git-protocol https
+  if($LASTEXITCODE -ne 0){throw "GitHub CLI 인증이 완료되지 않았습니다."}
+}
 & gh auth status
-if($LASTEXITCODE -ne 0){throw "Run gh auth login first."}
+if($LASTEXITCODE -ne 0){throw "GitHub CLI에 로그인되지 않았습니다."}
 if(Test-Path -LiteralPath $KeyStorePath){throw "A key already exists at the destination. No existing keys will be overwritten."}
 
 Write-Host "WARNING: A NEW signing key cannot update previously installed debug APKs."
