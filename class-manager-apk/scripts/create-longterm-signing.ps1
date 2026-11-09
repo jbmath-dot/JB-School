@@ -2,7 +2,7 @@
 # This new key CANNOT update old APKs; export JSON and uninstall the old app first.
 # Run locally, not from a public GitHub runner. Keep a secure backup of the .jks.
 param(
-  [string]$KeyStorePath = "$env:USERPROFILE\Documents\ClassManagerSigning\class-manager-release.jks",
+  [string]$KeyStorePath = "$env:LOCALAPPDATA\JBMath\ClassManagerSigning\class-manager-release.jks",
   [string]$Repository = "jbmath-dot/JB-School"
 )
 Set-StrictMode -Version Latest
@@ -49,8 +49,9 @@ try {
   PutSecret "CM_SIGNING_KEY_PASSWORD" $pass
   PutSecret "CM_SIGNING_STORE_TYPE" "JKS"
   PutSecret "CM_SIGNING_EXPECTED_SHA256" $sha
-  Write-Host "Registered long-term signing key. Keep the original .jks and password in a secure personal backup."
-  Write-Host "GitHub Actions: run '학급관리 APK 검사 및 기존 키로 업데이트 빌드' with build_signed_update=true."
+  Write-Host ("Registered long-term signing key. Local signing key: " + $KeyStorePath)
+  Write-Host "IMPORTANT: Store a second ENCRYPTED backup of this .jks file and its password securely. Never upload either to a public GitHub repository."
+  Write-Host "GitHub Actions: run '학급관리 APK 검사 및 고정 키 업데이트 빌드' with build_signed_update=true."
 } finally {
   Remove-Item Env:\CM_SIGNING_STORE_PASSWORD -ErrorAction SilentlyContinue
   $base64=$null
