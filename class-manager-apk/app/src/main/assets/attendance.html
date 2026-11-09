@@ -521,7 +521,25 @@ function showLogin(){$('loginOverlay').classList.add('open');$('mainApp').classL
 function hideLogin(){$('loginOverlay').classList.remove('open');$('mainApp').classList.remove('locked-main');}
 $('loginBtn').addEventListener('click',async()=>{secret=$('codeInput').value.trim();if(!secret)return;try{await api('/api/state');sessionStorage.setItem(SECRET_KEY,secret);$('codeInput').value='';hideLogin();await pull();await flush();toast('PC 서버와 연결되었습니다.');}catch(e){secret='';$('loginError').textContent='접속 코드를 확인해 주세요.';}});
 $('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
-$('dateInput').addEventListener('change',e=>changeDate(e.target.value,true));$('prevDay').addEventListener('click',()=>changeDate(shiftDate(selectedDate,-1),true));$('nextDay').addEventListener('click',()=>changeDate(shiftDate(selectedDate,1),true));$('todayBtn').addEventListener('click',()=>{autoToday=true;changeDate(today(),false);});
+$('dateInput').addEventListener('input',e=>{if(isValidDay(e.target.value))changeDate(e.target.value,true);});
+$('dateInput').addEventListener('change',e=>changeDate(e.target.value,true));
+$('prevDay').addEventListener('click',()=>{syncDateFromControl();changeDate(shiftDate(selectedDate,-1),true);});
+$('nextDay').addEventListener('click',()=>{syncDateFromControl();changeDate(shiftDate(selectedDate,1),true);});
+$('todayBtn').addEventListener('click',()=>{autoToday=true;changeDate(today(),false);});
+$('finalizeDate').addEventListener('click',()=>{
+ const date=syncDateFromControl(),l=getLayout(date);
+ if(!l){toast('자리배치를 먼저 가져오세요.');return;}
+ if(isDateClosed(date)){toast('이미 마감되었습니다.');return;}
+ const recorded=Object.keys(db.attendance?.[date]||{}).length,remaining=Math.max(0,l.count-recorded);
+ if(!confirm(date+' 출결을 저장 마감할까요?\n저장된 출결 '+recorded+'명 · 미입력 '+remaining+'명\n마감 후에는 해제하기 전까지 해당 날짜를 수정할 수 없습니다.'))return;
+ if(doOp({type:'finalize',date}))toast(date+' 저장 마감이 완료되었습니다.');
+});
+$('reopenDate').addEventListener('click',()=>{
+ const date=syncDateFromControl();
+ if(!isDateClosed(date))return;
+ if(!confirm(date+'의 마감을 해제하고 출결을 다시 수정할까요?'))return;
+ if(doOp({type:'reopen',date}))toast(date+' 마감이 해제되었습니다.');
+});
 $('statusSelect').addEventListener('change',()=>{resetEditorForStatus();toggleReason();});
 $('reasonSelect').addEventListener('change',()=>{selectedDetailReason='';customDetailReason='';renderDetailReasonPicker();});
 $('customReasonInput').addEventListener('input',e=>{customDetailReason=e.target.value.slice(0,60);});
@@ -537,19 +555,60 @@ $('saveEdit').addEventListener('click',()=>{
  if(status==='absence')editingPeriods=PERIODS.slice();
  const {date,n,baseRev:editingBaseRev}=editing;
  const cell=cleanCell({status,reason:$('reasonSelect').value,memo:$('memoField').value,time:$('timeField').value,periods:editingPeriods,detailReason:chosenDetailReason()});
- closeEditor();doOp({type:'set',date,student:n,baseRev:editingBaseRev,cell});toast(`${n}번 ${statusName(cell)} · ${cell.periods.length}개 시간 저장`);
+ closeEditor();if(doOp({type:'set',date,student:n,baseRev:editingBaseRev,cell}))toast(`${date} · ${n}번 ${statusName(cell)} · ${cell.periods.length}개 시간 저장`);
 });
-$('markAll').addEventListener('click',()=>{const l=getLayout();if(!l)return;const list=[];for(let n=1;n<=l.count;n++)if(!getCell(selectedDate,n))list.push(n);if(!list.length){toast('미입력 학생이 없습니다.');return;}
- if(!confirm(`${selectedDate} 미입력 학생 ${list.length}명을 출석 처리할까요?\n이미 결석·지각·조퇴 등이 입력된 학생은 변경되지 않습니다.`))return;doOp({type:'markRemaining',date:selectedDate,students:list});toast(`${list.length}명의 출석을 기록했습니다.`);});
-$('csvBtn').addEventListener('click',exportCsv);
+$('markAll').addEventListener('click',()=>{
+ const date=syncDateFromControl();if(isDateClosed(date)){toast('마감된 날짜는 출석을 일괄 입력할 수 없습니다.');return;}
+ const l=getLayout(date);if(!l)return;
+ const list=[];for(let n=1;n<=l.count;n++)if(!getCell(date,n))list.push(n);
+ if(!list.length){toast('미입력 학생이 없습니다.');return;}
+ if(!confirm(`${date} 미입력 학생 ${list.length}명을 출석 처리할까요?\n이미 결석·지각·조퇴 등이 입력된 학생은 변경되지 않습니다.`))return;
+ if(doOp({type:'markRemaining',date,students:list}))toast(date+' · '+list.length+'명의 출석을 기록했습니다.');
+});
+$('csvBtn').addEventListener('click',()=>{syncDateFromControl();exportCsv();});
 $('seatFile').addEventListener('change',e=>readJsonFile(e.target,importSeat));$('sameBrowser').addEventListener('click',()=>{try{const s=localStorage.getItem('jb-seat-swap-v1');if(!s)throw Error('같은 저장 영역에서 자리배치를 찾지 못했습니다. 기존 앱에서 백업 파일을 내려받아 가져오세요.');importSeat(JSON.parse(s));}catch(e){alert(e.message);}});
 $('backupBtn').addEventListener('click',backup);$('attendanceFile').addEventListener('change',e=>readJsonFile(e.target,restore));
-document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));$('todayPane').hidden=activeTab!=='today';$('monthPane').hidden=activeTab!=='month';if(activeTab==='month')renderMonthly();}));
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 $('monthInput').addEventListener('change',e=>{month=e.target.value;if(activeTab==='month')renderMonthly();});
+$('recordViewSelect').addEventListener('change',renderRecordStats);
+$('recordScopeSelect').addEventListener('change',()=>{
+ $('recordMonthWrap').hidden=$('recordScopeSelect').value!=='month';renderRecordStats();
+});
+$('recordMonthInput').addEventListener('change',renderRecordStats);
+['bulkScope','bulkFrom','bulkTo','bulkIncludeClosed'].forEach(id=>$(id).addEventListener('change',renderBulkPreview));
+$('bulkBackup').addEventListener('click',backup);
+let pendingBulkPlan=null;
+$('bulkDelete').addEventListener('click',()=>{
+ const plan=currentBulkPlan();
+ if(plan.error){toast(plan.error);return;}
+ if(!plan.dates.length){toast('삭제할 출결이 없습니다.');return;}
+ if(mode==='lan'){toast('일괄 삭제는 휴대폰 단독 저장 모드에서만 사용할 수 있습니다.');return;}
+ pendingBulkPlan={...plan,includeClosed:$('bulkIncludeClosed').checked};
+ $('bulkConfirmSummary').textContent='삭제 범위: '+plan.dates[0]+' ~ '+plan.dates[plan.dates.length-1]+' · '+plan.dates.length+'일 · '+plan.records+'건'+(pendingBulkPlan.includeClosed?' · 마감된 날짜 포함':'')+'\n삭제한 출결은 앱에서 되돌릴 수 없습니다. 먼저 전체 백업을 저장하세요.';
+ $('bulkConfirmWord').value='';$('bulkConfirmExecute').disabled=true;
+ $('bulkConfirmOverlay').classList.add('open');$('bulkConfirmWord').focus();
+});
+$('bulkConfirmWord').addEventListener('input',e=>{$('bulkConfirmExecute').disabled=e.target.value.trim()!=='삭제';});
+function closeBulkDialog(){$('bulkConfirmOverlay').classList.remove('open');pendingBulkPlan=null;}
+$('bulkConfirmCancel').addEventListener('click',closeBulkDialog);
+$('bulkConfirmOverlay').addEventListener('click',e=>{if(e.target===$('bulkConfirmOverlay'))closeBulkDialog();});
+$('bulkConfirmExecute').addEventListener('click',()=>{
+ if($('bulkConfirmWord').value.trim()!=='삭제'||!pendingBulkPlan)return;
+ const old=pendingBulkPlan,newPlan=currentBulkPlan();
+ if(old.dates.join('|')!==newPlan.dates.join('|')||old.records!==newPlan.records||old.includeClosed!==$('bulkIncludeClosed').checked){
+   closeBulkDialog();toast('대상 기록이 변경되었습니다. 삭제 범위를 다시 확인해 주세요.');return;
+ }
+ const op={type:'bulkDelete',dates:old.dates.slice(),includeClosed:old.includeClosed};
+ closeBulkDialog();
+ if(doOp(op))toast(old.dates.length+'일 · '+old.records+'건의 출결을 삭제했습니다.');
+});
 window.addEventListener('online',()=>{if(mode==='lan'&&secret)flush();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(autoToday&&today()!==lastToday)changeDate(today(),false);lastToday=today();if(mode==='lan'&&secret)flush();}});
 setInterval(()=>{if(autoToday&&today()!==lastToday){lastToday=today();changeDate(today(),false);}if(mode==='lan'&&secret&&!syncing){if(queue.length)flush();else pull();}},6500);
-$('effectiveInput').value=selectedDate;render();updateStatus();tryConnection();
+$('effectiveInput').value=selectedDate;
+$('recordMonthInput').value=month;
+$('bulkFrom').value=selectedDate;$('bulkTo').value=selectedDate;
+render();updateStatus();tryConnection();
 })();
 </script>
 </body>
