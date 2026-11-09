@@ -29,7 +29,11 @@ Write-Host "Before installing a new APK you must back up seating and attendance 
 $consent=Read-Host "To create and register a NEW long-lived key type MIGRATE"
 if($consent -cne "MIGRATE"){Write-Host "Cancelled";exit 0}
 $storeSecure=Read-Host "Create a strong keystore password (store securely)" -AsSecureString
+$confirmSecure=Read-Host "Enter the same password again for verification" -AsSecureString
 $pass=[System.Net.NetworkCredential]::new("",$storeSecure).Password
+$confirmPass=[System.Net.NetworkCredential]::new("",$confirmSecure).Password
+if($pass -cne $confirmPass){throw "비밀번호가 일치하지 않습니다. 키를 만들지 않았습니다."}
+$confirmPass=$null
 if($pass.Length -lt 12) { throw "Please use a password of at least 12 characters." }
 
 $folder=[IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($KeyStorePath))
