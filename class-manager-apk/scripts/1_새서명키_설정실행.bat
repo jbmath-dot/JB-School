@@ -1,32 +1,50 @@
 @echo off
-setlocal
-chcp 65001 > nul
+setlocal EnableExtensions DisableDelayedExpansion
 cd /d "%~dp0"
+if errorlevel 1 goto bad_directory
+
 echo.
-echo  학급관리 - 새 장기 서명 키 설정
-echo  --------------------------------
-echo  기존 앱은 아직 삭제하지 마세요.
-echo  명렬 및 출결 JSON 백업이 먼저 필요합니다.
+echo ClassManager - create long-term Android signing key
+echo ----------------------------------------------
+echo IMPORTANT: Back up attendance and seating JSON first.
+echo Do not uninstall the existing app yet.
 echo.
+
+where powershell.exe >nul 2>nul
+if errorlevel 1 goto missing_powershell
 where keytool.exe >nul 2>nul
-if errorlevel 1 (
- echo [필수] Java JDK 17 설치가 필요합니다.
- echo 설치 예: winget install --id Microsoft.OpenJDK.17 -e
- echo 설치 후 새 명령 프롬프트에서 다시 실행하세요.
- pause
- exit /b 1
-)
+if errorlevel 1 goto missing_jdk
 where gh.exe >nul 2>nul
-if errorlevel 1 (
- echo [필수] GitHub CLI 설치가 필요합니다. GitHub Desktop과 별도입니다.
- echo 설치 예: winget install --id GitHub.cli -e
- echo 설치 후 새 명령 프롬프트에서 다시 실행하세요.
- pause
- exit /b 1
-)
+if errorlevel 1 goto missing_gh
+
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0create-longterm-signing.ps1"
-set RESULT=%ERRORLEVEL%
+set "RESULT=%ERRORLEVEL%"
 echo.
-if not "%RESULT%"=="0" echo 설정 중 오류가 발생했습니다. 위 내용을 확인해 주세요.
+if not "%RESULT%"=="0" echo Signing key setup failed. See the message above.
+if "%RESULT%"=="0" echo Script finished. Check whether GitHub secrets were registered.
 pause
 exit /b %RESULT%
+
+:missing_powershell
+echo ERROR: Windows PowerShell is unavailable.
+pause
+exit /b 1
+
+:missing_jdk
+echo ERROR: Java JDK keytool was not found.
+echo Open a NEW terminal and run: winget install --id Microsoft.OpenJDK.17 -e
+echo Then close and restart this setup.
+pause
+exit /b 1
+
+:missing_gh
+echo ERROR: GitHub CLI was not found.
+echo Open a NEW terminal and run: winget install --id GitHub.cli -e
+echo Then close and restart this setup.
+pause
+exit /b 1
+
+:bad_directory
+echo ERROR: Could not enter the scripts directory.
+pause
+exit /b 1
