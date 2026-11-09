@@ -24,6 +24,18 @@ body{line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:poi
 @media(max-width:860px){.main{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.seat{min-height:70px}.panel{padding:13px}.top h1{font-size:1.24rem}}
 @media(max-width:420px){.shell{padding:10px 9px 42px}.stats{gap:5px}.stat .n{font-size:1.2rem}.stat .lab{font-size:.7rem}.seat{padding:4px 2px}.seat .name{font-size:.78rem}.seat .no{font-size:.69rem}.seat .tag{font-size:.63rem}.btn{font-size:.84rem;padding:7px 10px}.date-input input{max-width:162px}.panel h2{font-size:1.03rem}}
 @media print{body{background:#fff}.shell{max-width:none}.main{display:block}.top,.noprint,.panel.settingspanel,.footer,.toast,.overlay{display:none!important}.panel{box-shadow:none;border:0}.board{min-width:0!important}.seat{break-inside:avoid}.seatgrid{gap:5px}.boardwrap{overflow:visible}}
+
+/* NEIS-inspired attendance-by-period controls; all ten themes inherit shared UI variables. */
+.period-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:11px 0 6px}
+.period-chip,.detail-reason-chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ui-line,var(--line));color:var(--ui-text,var(--fg));background:var(--ui-panel,var(--card));border-radius:11px;min-height:46px;padding:8px 5px;font-weight:800;font-size:.89rem;line-height:1.15;text-align:center}
+.period-chip[aria-pressed="true"],.detail-reason-chip[aria-pressed="true"]{background:var(--ui-primary,var(--accent));border-color:var(--ui-primary,var(--accent));color:var(--ui-primary-ink,#fff)}
+.period-chip:disabled{cursor:default;opacity:1}
+.period-chip:disabled[aria-pressed="true"]{background:var(--ui-soft,var(--accentSoft));color:var(--ui-primary,var(--accent));border-color:var(--ui-primary,var(--accent))}
+.detail-reason-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.detail-reason-chip{flex:1 1 96px;max-width:100%;min-height:43px;padding:7px 11px}
+#periodSummary{font-weight:800;color:var(--ui-primary,var(--accent));margin-top:8px}
+#customReasonWrap{margin-top:10px}
+@media(min-width:560px){.period-chips{grid-template-columns:repeat(8,minmax(0,1fr))}}
 </style>
 <link rel="stylesheet" href="themes.css">
 <script>
@@ -84,7 +96,18 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
   <div class="eyebrow">빠른 입력</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
   <div class="field"><label for="statusSelect">출결 유형</label><select id="statusSelect"><option value="unrecorded">미입력(기록 없음)</option><option value="present">출석</option><option value="absence">결석</option><option value="late">지각</option><option value="early">조퇴</option><option value="missed">결과(수업 불참)</option></select></div>
   <div id="reasonFields"><div class="field"><label for="reasonSelect">출결 사유</label><select id="reasonSelect"><option value="illness">질병</option><option value="recognized">출석인정</option><option value="unexcused">미인정</option><option value="other">기타</option></select></div>
-  <div class="field"><label for="timeField">시각 또는 교시 (선택)</label><input id="timeField" type="text" maxlength="10" placeholder="예: 09:10 / 3교시"></div>
+  <div id="periodFields" class="field"><label id="periodTitle">미참여 교시 선택</label>
+    <p class="help" id="periodHint">출결 유형을 선택하세요.</p>
+    <div id="periodChips" class="period-chips" role="group" aria-labelledby="periodTitle"></div>
+    <p class="help" id="periodSummary" aria-live="polite"></p>
+    <input id="timeField" type="hidden">
+    <p id="legacyTimeNote" class="help" hidden></p>
+  </div>
+  <div id="detailReasonFields" class="field" hidden><label id="detailReasonTitle">세부 사유 빠른 선택</label>
+    <div class="detail-reason-chips" id="detailReasonChips" role="group" aria-labelledby="detailReasonTitle"></div>
+    <div class="field" id="customReasonWrap" hidden><label for="customReasonInput">기타 사유 직접 입력</label><input id="customReasonInput" type="text" maxlength="60" placeholder="간단한 사유를 입력하세요"></div>
+    <p class="help">선택한 사유는 앱의 보조 출결 기록에 저장됩니다. 출석인정 여부는 학교 규정과 증빙 확인 후 확정하세요.</p>
+  </div>
   <div class="field"><label for="memoField">간단 메모 (선택, 최대 90자)</label><textarea id="memoField" maxlength="90" placeholder="불필요한 진단명 등 민감한 의료정보는 기재하지 마세요."></textarea></div></div>
   <div class="actions"><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
   <p class="help" id="editUpdated"></p>
