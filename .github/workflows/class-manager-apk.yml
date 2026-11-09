@@ -91,6 +91,9 @@ jobs:
             exit 1
           fi
           echo "Confirmed original signing certificate fingerprint: $actual"
+      - name: Assign increasing version code for safe Android upgrades
+        shell: bash
+        run: echo "CM_SIGNED_VERSION_CODE=$((10000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
       - name: Build signed release APK with existing private key
         working-directory: class-manager-apk
         env:
@@ -117,7 +120,9 @@ jobs:
           [[ "$fingerprint" == "$expected" ]] || { echo "::error::Final APK signature mismatch."; exit 1; }
           info="$("$aapt" dump badging "$apk" | head -n 1)"
           [[ "$info" == *"name='kr.jbmath.classmanager'"* ]] || { echo "::error::Package name has changed."; exit 1; }
-          echo "Verified same package and original certificate; signed update APK ready."
+          actual_code="$(printf '%s' "$info" | sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p")"
+          [[ "$actual_code" -eq "$CM_SIGNED_VERSION_CODE" && "$actual_code" -gt 4 ]] || { echo "::error::Android versionCode is invalid for upgrade."; exit 1; }
+          echo "Verified original certificate, package and new versionCode: $actual_code."
       - name: Upload verified signed update APK
         uses: actions/upload-artifact@v4
         with:
