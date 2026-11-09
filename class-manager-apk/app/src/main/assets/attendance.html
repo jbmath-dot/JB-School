@@ -25,6 +25,7 @@ body{line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:poi
 @media(max-width:420px){.shell{padding:10px 9px 42px}.stats{gap:5px}.stat .n{font-size:1.2rem}.stat .lab{font-size:.7rem}.seat{padding:4px 2px}.seat .name{font-size:.78rem}.seat .no{font-size:.69rem}.seat .tag{font-size:.63rem}.btn{font-size:.84rem;padding:7px 10px}.date-input input{max-width:162px}.panel h2{font-size:1.03rem}}
 @media print{body{background:#fff}.shell{max-width:none}.main{display:block}.top,.noprint,.panel.settingspanel,.footer,.toast,.overlay{display:none!important}.panel{box-shadow:none;border:0}.board{min-width:0!important}.seat{break-inside:avoid}.seatgrid{gap:5px}.boardwrap{overflow:visible}}
 
+@media(min-width:861px){.stats{grid-template-columns:repeat(7,minmax(0,1fr))}}
 /* NEIS-inspired attendance-by-period controls; all ten themes inherit shared UI variables. */
 .period-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:11px 0 6px}
 .period-chip,.detail-reason-chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ui-line,var(--line));color:var(--ui-text,var(--fg));background:var(--ui-panel,var(--card));border-radius:11px;min-height:46px;padding:8px 5px;font-weight:800;font-size:.89rem;line-height:1.15;text-align:center}
@@ -248,8 +249,9 @@ function render(){const layout=getLayout();$('dateInput').value=selectedDate;$('
  $('classSubtitle').textContent=layout?`${layout.className||'학급'} · ${layout.count}명 · ${layout.cols}분단`:'확정 자리배치를 가져와 시작하세요';
  $('layoutCount').textContent=(db.layouts||[]).length?`${db.layouts.length}개 시기 등록`:'등록 안 됨';$('markAll').disabled=!layout;
  renderStats(layout);renderBoard(layout);renderList(layout);renderTodaySummary(layout);if(activeTab==='month')renderMonthly();}
-function renderStats(l){const s={present:0,unrecorded:0,absence:0,late:0,early:0,missed:0};if(l)for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n);s[c&&statuses[c.status]?c.status:'unrecorded']++;}
- $('stats').innerHTML=[['출석',s.present,'good'],['미입력',s.unrecorded,''],['결석',s.absence,'danger'],['지각',s.late,''],['조퇴',s.early,''],['결과',s.missed,'']].map(([name,n,cl])=>`<div class="stat ${cl}"><div class="n">${n}</div><div class="lab">${name}</div></div>`).join('');}
+function renderStats(l){const s={present:0,unrecorded:0,absence:0,late:0,early:0,missed:0,recognized:0};
+ if(l)for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n),key=c?.reason==='recognized'&&!['unrecorded','present'].includes(c.status)?'recognized':c&&statuses[c.status]?c.status:'unrecorded';s[key]++;}
+ $('stats').innerHTML=[['출석',s.present,'good'],['출석인정',s.recognized,'good'],['미입력',s.unrecorded,''],['결석',s.absence,'danger'],['지각',s.late,''],['조퇴',s.early,''],['결과',s.missed,'']].map(([name,n,cl])=>`<div class="stat ${cl}"><div class="n">${n}</div><div class="lab">${name}</div></div>`).join('');}
 function renderBoard(l){const grid=$('seatGrid');grid.replaceChildren();if(!l){grid.innerHTML='<div class="emptymsg" style="grid-column:1/-1">아직 자리배치가 없습니다.<br>오른쪽의 <b>자리교체 백업 가져오기</b>로 시작해 주세요.</div>';$('layoutCaption').textContent='확정된 배치를 가져온 뒤 사용할 수 있습니다.';$('layoutNotice').textContent='';return;}
  const rows=Math.ceil(l.count/l.cols),paired=new Set(l.pairs||[]);grid.style.gridTemplateColumns=`repeat(${l.cols},minmax(0,1fr))`;
  const mw=Math.max(0,l.cols*58);$('board').style.setProperty('--boardMin',`max(100%, ${mw}px)`);
