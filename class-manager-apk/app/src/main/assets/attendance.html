@@ -27,6 +27,20 @@ body{line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:poi
 
 @media(min-width:861px){.stats{grid-template-columns:repeat(7,minmax(0,1fr))}}
 /* NEIS-inspired attendance-by-period controls; all ten themes inherit shared UI variables. */
+
+.date-work-status{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px 12px;border:1px solid var(--ui-line,var(--line));border-radius:11px;margin-top:12px;background:var(--ui-soft,var(--light));font-size:.86rem;font-weight:800;color:var(--ui-text,var(--fg))}
+.date-work-status.closed{border-color:var(--ui-warn,var(--warn));background:var(--ui-late-bg,var(--warnbg))}
+.bulk-range{display:grid;grid-template-columns:1fr 1fr;gap:9px}.bulk-check{display:flex;gap:9px;align-items:flex-start;margin:12px 0;line-height:1.4;font-size:.83rem;font-weight:750;color:var(--ui-text,var(--fg))}
+.bulk-check input{flex:0 0 19px;width:19px;height:19px;accent-color:var(--ui-primary,var(--accent))}
+#bulkPreview{font-weight:850}
+.record-view{display:flex;flex-direction:column;gap:12px;margin-top:12px;max-height:min(63vh,690px);overflow-y:auto;overscroll-behavior:contain}
+.record-group{border:1px solid var(--ui-line,var(--line));border-radius:12px;overflow:hidden;background:var(--ui-panel,var(--card))}
+.record-group h3{background:var(--ui-soft,var(--accentSoft));border-bottom:1px solid var(--ui-line,var(--line));margin:0;padding:10px 12px;color:var(--ui-text,var(--fg));font-size:.89rem}
+.record-row{width:100%;border:0;border-bottom:1px solid var(--ui-line,var(--line));background:var(--ui-panel,var(--card));color:var(--ui-text,var(--fg));text-align:left;display:grid;grid-template-columns:minmax(90px,.8fr) minmax(76px,.7fr) minmax(100px,1.4fr);gap:7px;padding:10px 12px;min-height:47px;align-items:center}
+.record-row:last-child{border-bottom:0}.record-row:active{background:var(--ui-soft,var(--accentSoft))}
+.record-row span{min-width:0;overflow-wrap:anywhere;font-size:.8rem}
+.record-row .record-primary{font-weight:850}.record-row .record-note{font-size:.71rem;color:var(--ui-muted,var(--sub))}
+@media(max-width:380px){.bulk-range{grid-template-columns:1fr}.record-row{grid-template-columns:minmax(80px,1fr) minmax(66px,.7fr);}.record-row .record-detail{grid-column:1/-1}.tabbar button{font-size:.76rem;padding:9px 4px}}
 .period-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:11px 0 6px}
 .period-chip,.detail-reason-chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ui-line,var(--line));color:var(--ui-text,var(--fg));background:var(--ui-panel,var(--card));border-radius:11px;min-height:46px;padding:8px 5px;font-weight:800;font-size:.89rem;line-height:1.15;text-align:center}
 .period-chip[aria-pressed="true"],.detail-reason-chip[aria-pressed="true"]{background:var(--ui-primary,var(--accent));border-color:var(--ui-primary,var(--accent));color:var(--ui-primary-ink,#fff)}
@@ -51,8 +65,9 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
   </header>
   <section class="panel" style="margin-top:15px">
     <div class="date-row"><div><h2>출결 날짜</h2><div class="date-day" id="dayName">휴대폰·PC의 날짜를 자동 적용</div></div><div class="date-input">
-      <button class="btn" id="prevDay" aria-label="전날">‹</button><input type="date" id="dateInput" aria-label="출결 날짜"><button class="btn" id="nextDay" aria-label="다음 날">›</button><button class="btn soft" id="todayBtn">오늘</button>
+      <button class="btn" id="prevDay" aria-label="전날">‹</button><input type="date" id="dateInput" aria-label="출결 날짜"><button class="btn" id="nextDay" aria-label="다음 날">›</button><button class="btn soft" id="todayBtn">오늘</button><button type="button" class="btn primary" id="finalizeDate">저장 마감</button><button type="button" class="btn danger" id="reopenDate" hidden>마감 해제</button>
     </div></div>
+    <div class="date-work-status" id="dateWorkStatus" aria-live="polite"></div>
     <div class="stats" id="stats"></div>
   </section>
   <div class="main">
@@ -74,10 +89,41 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
         <p class="help">새 자리배치를 가져와도 과거 출결은 삭제되지 않습니다. 날짜에 맞는 자리배치를 자동 표시합니다.</p>
       </section>
       <section class="panel">
-        <div class="tabbar"><button type="button" class="active" data-tab="today">오늘/선택일</button><button type="button" data-tab="month">월별 집계</button></div>
+        <div class="tabbar"><button type="button" class="active" data-tab="today">선택 날짜</button><button type="button" data-tab="month">월별 집계</button><button type="button" data-tab="records">전체 기록·통계</button></div>
         <div id="todayPane"><div id="eventSummary"></div></div>
         <div id="monthPane" hidden><div class="field" style="margin-top:0"><label for="monthInput">집계 월</label><input type="month" id="monthInput"></div><div class="monthly" id="monthTable"></div><p class="help">출석인정 항목은 다른 유형의 건수에서 제외하여 별도 집계합니다. NEIS 반영 전 학교 규정에 따라 확인하세요.</p></div>
+        <div id="recordsPane" hidden>
+          <div class="field" style="margin-top:0"><label for="recordViewSelect">기록 정렬</label>
+            <select id="recordViewSelect">
+              <option value="student">학생별 · 번호 오름차순 → 각 학생의 날짜 과거순</option>
+              <option value="date">날짜별 · 과거순 → 각 날짜의 번호 오름차순</option>
+            </select>
+          </div>
+          <div class="field"><label for="recordScopeSelect">조회 범위</label>
+            <select id="recordScopeSelect"><option value="all">전체 기록</option><option value="month">선택한 월만</option></select>
+          </div>
+          <div class="field" id="recordMonthWrap" hidden><label for="recordMonthInput">조회 월</label><input type="month" id="recordMonthInput"></div>
+          <p class="help" id="recordStats" aria-live="polite"></p>
+          <div id="recordTable" class="record-view"></div>
+          <p class="help">표시된 행을 누르면 해당 날짜로 이동합니다. 마감된 날짜는 마감을 해제해야 수정할 수 있습니다.</p>
+        </div>
       </section>
+      <details class="panel settingspanel"><summary>출결 일괄 삭제 · 날짜별 정리</summary>
+        <div class="settings">
+          <p class="help">자리배치와 학생 명단은 유지하고 출결 내역만 삭제합니다. 복구하려면 삭제 전 전체 백업이 필요합니다.</p>
+          <div class="field"><label for="bulkScope">삭제할 날짜 범위</label>
+            <select id="bulkScope"><option value="selected">현재 선택 날짜만</option><option value="range">기간 지정 · 과거부터 현재까지</option><option value="all">전체 날짜 출결</option></select>
+          </div>
+          <div id="bulkRange" class="bulk-range" hidden>
+            <div class="field"><label for="bulkFrom">시작일</label><input type="date" id="bulkFrom"></div>
+            <div class="field"><label for="bulkTo">종료일</label><input type="date" id="bulkTo"></div>
+          </div>
+          <label class="bulk-check"><input id="bulkIncludeClosed" type="checkbox"> 마감된 날짜도 일괄 삭제 대상에 포함</label>
+          <p class="help" id="bulkPreview" aria-live="polite"></p>
+          <div class="flex"><button type="button" id="bulkBackup" class="btn soft">삭제 전 전체 백업</button><button type="button" id="bulkDelete" class="btn danger">선택 범위 일괄 삭제</button></div>
+          <p class="notice">삭제 버튼을 누른 뒤에는 대상 날짜와 건수를 다시 확인하고 ‘삭제’를 직접 입력해야 실행됩니다. 출결 기록은 자동으로 외부에 백업되지 않습니다.</p>
+        </div>
+      </details>
       <details class="panel settingspanel"><summary>데이터 백업 · 가져오기 · 개인정보 안내</summary><div class="settings">
         <div class="flex"><button class="btn" id="backupBtn">전체 백업 JSON 저장</button><label class="btn filelabel">출결 백업 복원<input id="attendanceFile" type="file" accept=".json,application/json"></label></div>
         <div class="notice">백업 파일에는 학생 이름과 출결 정보가 들어 있습니다. 개인용·학교 승인 저장소에만 보관하고, 메신저나 공개 클라우드에 게시하지 마세요.</div>
