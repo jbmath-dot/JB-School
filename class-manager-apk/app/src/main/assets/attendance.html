@@ -93,9 +93,9 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
 </div></div>
 <div class="overlay" id="editOverlay" role="dialog" aria-modal="true" aria-labelledby="editTitle"><div class="dialog">
   <button class="x" id="closeEdit" aria-label="닫기">×</button><h2 id="editTitle">출결 입력</h2><p class="date-label" id="editDate"></p>
-  <div class="eyebrow">빠른 입력</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
+  <div class="eyebrow">빠른 입력 · 조회·1~6교시·종례</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
   <div class="field"><label for="statusSelect">출결 유형</label><select id="statusSelect"><option value="unrecorded">미입력(기록 없음)</option><option value="present">출석</option><option value="absence">결석</option><option value="late">지각</option><option value="early">조퇴</option><option value="missed">결과(수업 불참)</option></select></div>
-  <div id="reasonFields"><div class="field"><label for="reasonSelect">출결 사유</label><select id="reasonSelect"><option value="illness">질병</option><option value="recognized">출석인정</option><option value="unexcused">미인정</option><option value="other">기타</option></select></div>
+  <div id="reasonFields"><div class="field"><label for="reasonSelect">출결 구분</label><select id="reasonSelect"><option value="illness">질병</option><option value="recognized">출석인정</option><option value="unexcused">미인정</option><option value="other">기타</option></select></div>
   <div id="periodFields" class="field"><label id="periodTitle">미참여 교시 선택</label>
     <p class="help" id="periodHint">출결 유형을 선택하세요.</p>
     <div id="periodChips" class="period-chips" role="group" aria-labelledby="periodTitle"></div>
@@ -284,9 +284,17 @@ function renderMonthly(){const l=getLayout(month+'-15');const t=$('monthTable');
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function openEditor(n){if(mode==='lan'&&!secret){showLogin();return;}const l=getLayout();if(!l)return;const cell=getCell(selectedDate,n);editing={date:selectedDate,n,baseRev:cell?.rev||0};$('editTitle').textContent=`${n}번 ${l.names[n-1]||'학생'}`;$('editDate').textContent=selectedDate+' 출결 입력 · 이전 날짜도 수정할 수 있습니다.';
  $('statusSelect').value=cell?.status||'unrecorded';$('reasonSelect').value=cell?.reason||'illness';$('timeField').value=cell?.time||'';$('memoField').value=cell?.memo||'';
+ editingPeriods=normalizePeriods(cell?.periods);
+ if(!editingPeriods.length&&cell?.status==='late'||!editingPeriods.length&&cell?.status==='early'||!editingPeriods.length&&cell?.status==='missed'){
+   const p=timeToPeriod(cell);if(p)editingPeriods=automaticPeriods(cell.status,p);
+ }
+ selectedDetailReason=String(cell?.detailReason||'').slice(0,60);customDetailReason='';
+ $('legacyTimeNote').hidden=!cell?.time;
+ $('legacyTimeNote').textContent=cell?.time?'이전 버전에서 입력한 시각·교시: '+cell.time+' (보존됩니다)':'';
+
  $('editUpdated').textContent=cell?.updatedAt?`최근 저장: ${new Date(cell.updatedAt).toLocaleString('ko-KR')}`:'이 날짜의 입력 기록이 없습니다.';toggleReason();$('editOverlay').classList.add('open');$('statusSelect').focus();}
 function closeEditor(){$('editOverlay').classList.remove('open');editing=null;}
-function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includes($('statusSelect').value);}
+function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includes($('statusSelect').value);renderPeriodPicker();renderDetailReasonPicker();}
 function changeDate(s,manual){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return;selectedDate=s;if(manual)autoToday=false;month=s.slice(0,7);render();}
 function download(filename,content,mime){if(window.AndroidApp&&AndroidApp.saveTextFile){AndroidApp.saveTextFile(filename,mime||'application/json',String(content));return;}const blob=new Blob([content],{type:mime||'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
 function csvCell(x){let s=String(x??'');if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
@@ -319,12 +327,23 @@ function hideLogin(){$('loginOverlay').classList.remove('open');$('mainApp').cla
 $('loginBtn').addEventListener('click',async()=>{secret=$('codeInput').value.trim();if(!secret)return;try{await api('/api/state');sessionStorage.setItem(SECRET_KEY,secret);$('codeInput').value='';hideLogin();await pull();await flush();toast('PC 서버와 연결되었습니다.');}catch(e){secret='';$('loginError').textContent='접속 코드를 확인해 주세요.';}});
 $('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
 $('dateInput').addEventListener('change',e=>changeDate(e.target.value,true));$('prevDay').addEventListener('click',()=>changeDate(shiftDate(selectedDate,-1),true));$('nextDay').addEventListener('click',()=>changeDate(shiftDate(selectedDate,1),true));$('todayBtn').addEventListener('click',()=>{autoToday=true;changeDate(today(),false);});
-$('statusSelect').addEventListener('change',toggleReason);
-document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const [s,r]=b.dataset.preset.split(',');$('statusSelect').value=s;$('reasonSelect').value=r;toggleReason();}));
+$('statusSelect').addEventListener('change',()=>{resetEditorForStatus();toggleReason();});
+$('reasonSelect').addEventListener('change',()=>{selectedDetailReason='';customDetailReason='';renderDetailReasonPicker();});
+$('customReasonInput').addEventListener('input',e=>{customDetailReason=e.target.value.slice(0,60);});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const [s,r]=b.dataset.preset.split(',');$('statusSelect').value=s;$('reasonSelect').value=r;resetEditorForStatus();toggleReason();}));
 $('closeEdit').addEventListener('click',closeEditor);$('cancelEdit').addEventListener('click',closeEditor);
 $('editOverlay').addEventListener('click',e=>{if(e.target===$('editOverlay'))closeEditor();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditor();});
-$('saveEdit').addEventListener('click',()=>{if(!editing)return;const {date,n,baseRev:editingBaseRev}=editing,status=$('statusSelect').value,cell=cleanCell({status,reason:$('reasonSelect').value,memo:$('memoField').value,time:$('timeField').value});
- closeEditor();doOp({type:'set',date,student:n,baseRev:editingBaseRev,cell});toast(`${n}번 ${statusName(cell)} 저장`);});
+$('saveEdit').addEventListener('click',()=>{
+ if(!editing)return;
+ const status=$('statusSelect').value;
+ if(['late','early','missed'].includes(status)&&!editingPeriods.length){
+   toast('빠진 교시를 선택해 주세요.');$('periodChips').querySelector('button')?.focus();return;
+ }
+ if(status==='absence')editingPeriods=PERIODS.slice();
+ const {date,n,baseRev:editingBaseRev}=editing;
+ const cell=cleanCell({status,reason:$('reasonSelect').value,memo:$('memoField').value,time:$('timeField').value,periods:editingPeriods,detailReason:chosenDetailReason()});
+ closeEditor();doOp({type:'set',date,student:n,baseRev:editingBaseRev,cell});toast(`${n}번 ${statusName(cell)} · ${cell.periods.length}개 시간 저장`);
+});
 $('markAll').addEventListener('click',()=>{const l=getLayout();if(!l)return;const list=[];for(let n=1;n<=l.count;n++)if(!getCell(selectedDate,n))list.push(n);if(!list.length){toast('미입력 학생이 없습니다.');return;}
  if(!confirm(`${selectedDate} 미입력 학생 ${list.length}명을 출석 처리할까요?\n이미 결석·지각·조퇴 등이 입력된 학생은 변경되지 않습니다.`))return;doOp({type:'markRemaining',date:selectedDate,students:list});toast(`${list.length}명의 출석을 기록했습니다.`);});
 $('csvBtn').addEventListener('click',exportCsv);
