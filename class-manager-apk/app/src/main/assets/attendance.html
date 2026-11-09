@@ -119,6 +119,88 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
 const $=id=>document.getElementById(id), EMPTY=()=>({v:2,version:0,layouts:[],attendance:{},history:[],recentIds:[]});
 const statuses={unrecorded:'미입력',present:'출석',absence:'결석',late:'지각',early:'조퇴',missed:'결과'};
 const reasons={illness:'질병',recognized:'출석인정',unexcused:'미인정',other:'기타'};
+const PERIODS=['조회','1교시','2교시','3교시','4교시','5교시','6교시','종례'];
+const DETAIL_CHOICES={recognized:['감염병','생리','교외체험학습'],illness:['감기','복통','두통','병원진료']};
+let editingPeriods=[],selectedDetailReason='',customDetailReason='';
+function normalizePeriods(value){const set=new Set(Array.isArray(value)?value:[]);return PERIODS.filter(p=>set.has(p));}
+function automaticPeriods(status,terminal){
+  if(status==='absence')return PERIODS.slice();
+  const idx=PERIODS.indexOf(terminal);
+  if(idx<0)return [];
+  if(status==='late')return PERIODS.slice(0,idx+1);
+  if(status==='early')return PERIODS.slice(idx);
+  if(status==='missed')return [terminal];
+  return [];
+}
+function getDetailChoiceKind(){
+  const s=$('statusSelect').value,r=$('reasonSelect').value;
+  if(s==='absence'&&r==='recognized')return 'recognized';
+  if((s==='absence'||s==='early')&&r==='illness')return 'illness';
+  return '';
+}
+function displaySelectedPeriods(status,periods){
+  if(status==='absence')return '조회부터 종례까지 전체 8개 시간 선택됨';
+  if(!periods.length)return '미참여 교시를 선택하세요. 교시를 직접 입력할 필요가 없습니다.';
+  if(status==='late')return '조회부터 '+periods[periods.length-1]+'까지 '+periods.length+'개 시간 선택됨';
+  if(status==='early')return periods[0]+'부터 종례까지 '+periods.length+'개 시간 선택됨';
+  return periods.join(' · ')+' ('+periods.length+'개 시간)';
+}
+function renderPeriodPicker(){
+  const status=$('statusSelect').value;
+  $('periodFields').hidden=status==='present'||status==='unrecorded';
+  if(status==='absence')editingPeriods=PERIODS.slice();
+  if(status==='present'||status==='unrecorded')editingPeriods=[];
+  const grid=$('periodChips');grid.replaceChildren();
+  const instruction={absence:'결석을 선택하면 조회·1~6교시·종례 전체를 자동 표시합니다.',late:'마지막으로 참여하지 못한 교시 하나만 누르세요. 조회부터 자동 선택됩니다.',early:'처음 참여하지 못한 교시 하나만 누르세요. 종례까지 자동 선택됩니다.',missed:'참여하지 못한 교시를 하나씩 선택하거나 해제하세요.'};
+  $('periodHint').textContent=instruction[status]||'';
+  for(const p of PERIODS){
+    let b=document.createElement('button');b.type='button';b.className='period-chip';b.textContent=p;
+    b.setAttribute('aria-pressed',String(editingPeriods.includes(p)));
+    b.disabled=status==='absence';
+    b.setAttribute('aria-label',p+(editingPeriods.includes(p)?' 선택됨':' 미선택'));
+    b.addEventListener('click',()=>{
+      if(status==='late'||status==='early')editingPeriods=automaticPeriods(status,p);
+      else if(status==='missed'){
+        const a=new Set(editingPeriods);if(a.has(p))a.delete(p);else a.add(p);editingPeriods=normalizePeriods([...a]);
+      }
+      renderPeriodPicker();
+    });
+    grid.append(b);
+  }
+  $('periodSummary').textContent=displaySelectedPeriods(status,editingPeriods);
+}
+function renderDetailReasonPicker(){
+  const kind=getDetailChoiceKind(),wrap=$('detailReasonFields'),area=$('detailReasonChips');
+  wrap.hidden=!kind;area.replaceChildren();if(!kind)return;
+  $('detailReasonTitle').textContent=kind==='recognized'?'출석인정 결석 세부 사유':'질병 '+statuses[$('statusSelect').value]+' 세부 사유';
+  const choices=DETAIL_CHOICES[kind];
+  if(selectedDetailReason&&selectedDetailReason!=='__custom__'&&!choices.includes(selectedDetailReason)){
+    customDetailReason=selectedDetailReason;selectedDetailReason='__custom__';
+  }
+  for(const choice of [...choices,'__custom__']){
+    const b=document.createElement('button');b.type='button';b.className='detail-reason-chip';
+    b.textContent=choice==='__custom__'?'기타 직접 입력':choice;
+    b.setAttribute('aria-pressed',String(selectedDetailReason===choice));
+    b.addEventListener('click',()=>{
+      selectedDetailReason=choice;renderDetailReasonPicker();
+      if(choice==='__custom__')$('customReasonInput').focus();
+    });area.append(b);
+  }
+  $('customReasonWrap').hidden=selectedDetailReason!=='__custom__';
+  if(selectedDetailReason==='__custom__')$('customReasonInput').value=customDetailReason;
+}
+function chosenDetailReason(){return getDetailChoiceKind()?(selectedDetailReason==='__custom__'?$('customReasonInput').value.trim().slice(0,60):selectedDetailReason):'';}
+function timeToPeriod(cell){
+  const old=String(cell?.time||'').trim();
+  const m=old.match(/^([1-6])\s*교시$/);
+  if(m)return m[1]+'교시';
+  return old==='조회'||old==='종례'?old:'';
+}
+function resetEditorForStatus(){
+  editingPeriods=[];selectedDetailReason='';customDetailReason='';
+  renderPeriodPicker();renderDetailReasonPicker();
+}
+
 const LOCAL_KEY='jb-attendance-local-v2',QUEUE_KEY='jb-attendance-queue-v2',SECRET_KEY='jb-attendance-session-key';
 let db=readJson(LOCAL_KEY,EMPTY()),queue=readJson(QUEUE_KEY,[]),mode='local',secret='',syncing=false,editing=null,activeTab='today',autoToday=true;
 let selectedDate=today(),month=selectedDate.slice(0,7),lastToday=today(),toastTimeout;
@@ -132,7 +214,7 @@ function getLayout(date=selectedDate){const ls=db.layouts||[];if(!ls.length)retu
 function getCell(date,n){return (db.attendance[date]||{})[String(n)]||null;}
 function statusName(cell){if(!cell||cell.status==='unrecorded')return '미입력';if(cell.status==='present')return '출석';return `${reasons[cell.reason]||''} ${statuses[cell.status]||''}`.trim();}
 function useCellClass(cell){if(!cell)return 'unrecorded';return cell.reason==='recognized'?'recognized':cell.status;}
-function cleanCell(cell){let status=statuses[cell.status]?cell.status:'unrecorded',real=status!=='unrecorded'&&status!=='present';return {status,reason:real?(reasons[cell.reason]?cell.reason:'illness'):'',memo:real?String(cell.memo||'').slice(0,90):'',time:real?String(cell.time||'').slice(0,10):''};}
+function cleanCell(cell){let status=statuses[cell.status]?cell.status:'unrecorded',real=status!=='unrecorded'&&status!=='present';const reason=real?(reasons[cell.reason]?cell.reason:'illness'):'';let periods=real?normalizePeriods(cell.periods):[];if(status==='absence')periods=PERIODS.slice();return {status,reason,memo:real?String(cell.memo||'').slice(0,90):'',time:real?String(cell.time||'').slice(0,10):'',periods,detailReason:real&&((status==='absence'&&reason==='recognized')||((status==='absence'||status==='early')&&reason==='illness'))?String(cell.detailReason||'').slice(0,60):''};}
 function applyLocal(op){
   if(op.type==='layout'){db.layouts=db.layouts||[];db.layouts.push(op.layout);db.layouts.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom)||String(a.importedAt||'').localeCompare(String(b.importedAt||'')));}
   if(op.type==='set'){
