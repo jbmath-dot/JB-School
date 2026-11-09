@@ -62,7 +62,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
         <div class="legend"><span><b class="v1"></b>출석</span><span><b class="v2"></b>결석</span><span><b class="v3"></b>지각·조퇴·결과</span><span><b class="v4"></b>출석인정</span><span><b></b>미입력</span></div>
         <p class="help" id="layoutNotice"></p>
       </section>
-      <section class="panel"><div class="hd"><div><h2>일일 출결 명렬</h2><div class="sm">좌석을 찾기 어렵다면 여기에서 학생을 선택하세요.</div></div><button class="btn small" id="csvBtn">선택 날짜 CSV</button></div><div id="dailyList" class="list"></div></section>
+      <section class="panel"><div class="hd"><div><h2>일일 출결 명렬</h2><div class="sm">좌석을 찾기 어렵다면 여기에서 학생을 선택하세요.</div></div><button class="btn small" id="csvBtn">선택 날짜 교시별 CSV</button></div><div id="dailyList" class="list"></div></section>
     </div>
     <div class="column">
       <section class="panel settingspanel">
@@ -110,7 +110,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
   </div>
   <div class="field"><label for="memoField">간단 메모 (선택, 최대 90자)</label><textarea id="memoField" maxlength="90" placeholder="불필요한 진단명 등 민감한 의료정보는 기재하지 마세요."></textarea></div></div>
   <div class="actions"><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
-  <p class="help" id="editUpdated"></p>
+  <p class="help">교시 미참여 표시는 나이스 입력을 돕는 참고 기록입니다. 같은 날 복합 출결과 출석인정의 최종 처리는 학교 규정에 따라 확인해야 합니다.</p><p class="help" id="editUpdated"></p>
 </div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -269,7 +269,7 @@ function renderList(l){const target=$('dailyList');target.replaceChildren();if(!
  for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n),b=document.createElement('button');b.type='button';b.className='studentrow';
    const num=document.createElement('span');num.className='bubble';num.textContent=n;
    const name=document.createElement('span');name.className='student-name';name.textContent=l.names[n-1]||`${n}번 학생`;
-   const pill=document.createElement('span');pill.className='pill '+useCellClass(c);pill.textContent=statusName(c);b.append(num,name,pill);b.addEventListener('click',()=>openEditor(n));target.appendChild(b);}}
+   const pill=document.createElement('span');pill.className='pill '+useCellClass(c);pill.textContent=statusName(c);pill.title=displaySelectedPeriods(c?.status||'unrecorded',c?.status==='absence'?PERIODS:normalizePeriods(c?.periods));b.append(num,name,pill);b.addEventListener('click',()=>openEditor(n));target.appendChild(b);}}
 function renderTodaySummary(l){const box=$('eventSummary');if(!l){box.innerHTML='<p class="sm">자리배치가 준비되면 선택일의 출결 요약이 표시됩니다.</p>';return;}
  const entries=[];for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n);if(c&&c.status!=='present')entries.push({n,c});}
  let p=document.createElement('p');p.className='sm';p.textContent='미입력은 출석으로 자동 간주하지 않습니다. 출석 확인 후 “미입력 학생 출석 처리”를 누르세요.';box.replaceChildren(p);
@@ -298,7 +298,14 @@ function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includ
 function changeDate(s,manual){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return;selectedDate=s;if(manual)autoToday=false;month=s.slice(0,7);render();}
 function download(filename,content,mime){if(window.AndroidApp&&AndroidApp.saveTextFile){AndroidApp.saveTextFile(filename,mime||'application/json',String(content));return;}const blob=new Blob([content],{type:mime||'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
 function csvCell(x){let s=String(x??'');if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
-function exportCsv(){const l=getLayout();if(!l){toast('자리배치를 먼저 가져오세요.');return;}const rows=[['날짜','학급','번호','이름','출결 유형','출결 사유','시각/교시','메모']];for(let n=1;n<=l.count;n++){let c=getCell(selectedDate,n);rows.push([selectedDate,l.className,n,l.names[n-1]||'',c?statuses[c.status]:'미입력',c?reasons[c.reason]||'':'',c?.time||'',c?.memo||'']);}download(`학급출결_${selectedDate}.csv`,'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast('CSV 파일을 기기에 저장했습니다.');}
+function exportCsv(){const l=getLayout();if(!l){toast('자리배치를 먼저 가져오세요.');return;}
+ const rows=[['날짜','학급','번호','이름','출결 유형','출결 구분','세부 사유',...PERIODS,'이전 시각/교시','메모']];
+ for(let n=1;n<=l.count;n++){
+   const c=getCell(selectedDate,n),selected=c?.status==='absence'?PERIODS:normalizePeriods(c?.periods);
+   rows.push([selectedDate,l.className,n,l.names[n-1]||'',c?statuses[c.status]:'미입력',c?reasons[c.reason]||'':'',c?.detailReason||'',...PERIODS.map(p=>selected.includes(p)?'/':''),c?.time||'',c?.memo||'']);
+ }
+ download(`학급출결_교시별_${selectedDate}.csv`,'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast('교시별 CSV 파일을 기기에 저장했습니다.');
+}
 function interpretSeat(obj){const raw=obj?.app==='jb-seat-swap'?obj.state:(obj?.state?.seats?obj.state:obj);
  if(!raw||!Number.isInteger(raw.count)||!Number.isInteger(raw.cols)||!Array.isArray(raw.seats))throw Error('학급 자리교체 앱의 백업 파일이 아닙니다.');
  const records=Array.isArray(raw.records)?raw.records:[];
