@@ -40,11 +40,11 @@ button:focus-visible{outline:3px solid var(--ui-ring);outline-offset:2px}
 .cm-grid-panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
 .cm-surface{background:var(--ui-panel);border:1px solid var(--ui-line);color:var(--ui-text);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);padding:15px;min-width:0}
 .cm-surface h2{font-size:1rem;margin:0 0 12px;letter-spacing:-.035em}
-.cm-att-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cm-att-numbers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
 .cm-nbox{border-radius:13px;background:var(--ui-soft);padding:10px 4px;text-align:center}
 .cm-nbox:nth-child(1){background:var(--ui-present-bg)}
-.cm-nbox:nth-child(2){background:var(--ui-absent-bg)}
-.cm-nbox:nth-child(3){background:var(--ui-late-bg)}
+.cm-nbox:nth-child(2){background:var(--ui-recognized-bg)}.cm-nbox:nth-child(3){background:var(--ui-absent-bg)}
+.cm-nbox:nth-child(4){background:var(--ui-late-bg)}
 .cm-nbox .amount{font-size:1.4rem;font-weight:900;font-variant-numeric:tabular-nums}
 .cm-nbox .label{font-size:.73rem;color:var(--ui-muted);margin-top:3px}
 .cm-lowhint{font-size:.79rem;margin:10px 0 0;color:var(--ui-muted);line-height:1.5}
@@ -101,6 +101,7 @@ button:focus-visible{outline:3px solid var(--ui-ring);outline-offset:2px}
 :root[data-ui-theme="navy-gold"] .cm-feature{border-bottom:4px solid #eac46e}
 :root[data-ui-theme="lavender"] .cm-feature:first-child{color:#fff}
 :root[data-ui-theme="glass"] .cm-feature,:root[data-ui-theme="glass"] .cm-hero{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+@media(max-width:380px){.cm-att-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){
  .cm-grid-panels{grid-template-columns:1fr}
  .cm-home{padding:12px 10px 26px}
@@ -132,6 +133,7 @@ button:focus-visible{outline:3px solid var(--ui-ring);outline-offset:2px}
       <div class="cm-grid-panels">
         <section class="cm-surface"><h2>오늘 출결 현황</h2><div class="cm-att-numbers">
           <div class="cm-nbox"><div class="amount" id="homePresent">—</div><div class="label">출석</div></div>
+          <div class="cm-nbox"><div class="amount" id="homeRecognized">—</div><div class="label">출석인정</div></div>
           <div class="cm-nbox"><div class="amount" id="homeAbsence">—</div><div class="label">결석</div></div>
           <div class="cm-nbox"><div class="amount" id="homeLate">—</div><div class="label">지각</div></div>
         </div><p class="cm-lowhint" id="homeUnrecorded">출결은 입력 기록 기준으로 표시됩니다.</p></section>
@@ -276,10 +278,11 @@ function renderHome(){
  $('classLabel').textContent=s?(s.className||'학급')+' · '+s.count+'명':'학급을 설정하면 자리·출결 현황이 표시됩니다';
  $('homeClassStatus').textContent=s?.locked?'확정된 자리배치 사용 중':'자리 미확정 · 기기 내부 저장';
  const rec=db?.attendance?.[date]||{};
- let count={present:0,absence:0,late:0,early:0,missed:0,unrecorded:0};
+ let count={present:0,recognized:0,absence:0,late:0,early:0,missed:0,unrecorded:0};
  const n=Number(s?.count)||0;
- for(let k=1;k<=n;k++){let val=rec[String(k)]?.status||'unrecorded';if(!(val in count))val='unrecorded';count[val]++;}
+ for(let k=1;k<=n;k++){const cell=rec[String(k)];let val=cell?.reason==='recognized'&&cell?.status!=='present'&&cell?.status!=='unrecorded'?'recognized':cell?.status||'unrecorded';if(!(val in count))val='unrecorded';count[val]++;}
  $('homePresent').textContent=n?count.present+'명':'—';
+ $('homeRecognized').textContent=n?count.recognized+'명':'—';
  $('homeAbsence').textContent=n?count.absence+'명':'—';
  $('homeLate').textContent=n?count.late+'명':'—';
  $('homeUnrecorded').textContent=n?'미입력 '+count.unrecorded+'명 · 조퇴 '+count.early+'명 · 결과 '+count.missed+'명 · 입력한 출결만 집계':'확정된 학급 및 출결 기록을 불러오세요.';
