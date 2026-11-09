@@ -87,3 +87,42 @@ APK 내부 데이터는 PC와 자동 동기화되지 않습니다. 업데이트 
 ### 기기·동기화 주의
 현재 Android APK에서는 위 기능이 휴대폰 내부에서 처리됩니다. 이전에 제공된 별도 PC 서버의 LAN 연동 모드에서는 안전을 위해 마감·삭제를 차단합니다. PC 서버에 새 작업 처리 규칙이 적용되었다고 주장하지 않습니다.
 자동 검사: node --test tests/*.test.cjs. 실기기 갤럭시에서의 전체 조작 검증은 별도 확인이 필요합니다.
+
+
+## 동일 앱 덮어쓰기 업데이트 — 고정 서명 키 적용 (v1.3.1 빌드 설정)
+
+### 중요한 결론
+- Android는 **패키지 이름 + 동일 서명 인증서 + 더 높은 versionCode** 조건으로 앱을 기존 데이터 그대로 업데이트합니다.
+- 지금까지 공개된 학급관리 1.0~1.3 APK는 GitHub Actions가 실행될 때마다 Android Debug 개인키를 새로 만들었습니다. 이 파일들은 인증서 SHA-256 지문이 달라 서로 덮어쓸 수 없습니다.
+- **APK 안에는 공개 서명 인증서만 있습니다. 원래 개인키는 APK에서 추출할 수 없습니다.** 최초 debug APK를 생성한 일회용 GitHub Actions 작업 공간의 keystore 파일도 기존에 아티팩트로 보관하지 않았습니다.
+- 따라서 원래 keystore(.jks 또는 debug.keystore) 원본과 비밀번호를 갖고 있지 않으면 기존 설치본을 바로 업데이트할 수 없습니다. 이 제한을 앱 코드로 우회하지 않습니다.
+
+### 코드에 반영한 보호조치
+1. Android release 빌드에는 CI에서 원본 keystore를 암호화된 GitHub Repository Secrets로 제공해야 합니다.
+2. 빌드 전에 **기존 APK의 SHA-256 서명 인증서 지문**과 제공된 keystore 인증서를 대조합니다. 서로 다르면 빌드를 즉시 중단합니다.
+3. release APK 빌드 후 동일 인증서 및 패키지명 `kr.jbmath.classmanager`을 다시 검증한 뒤에만 `ClassManager-SIGNED-UPDATE` 아티팩트로 제공합니다.
+4. 임시 Debug APK는 **업데이트 설치 파일로 공개하지 않습니다.** 미리보기는 별도 패키지명 `kr.jbmath.classmanager.preview`으로만 제공합니다.
+5. 공개 GitHub 저장소에 개인키 파일을 커밋하지 않도록 `.gitignore`를 추가했습니다.
+
+### 원본 keystore가 있을 때 (Windows)
+- JDK, GitHub CLI(gh) 설치 후 `gh auth login`을 실행합니다.
+- 이전에 휴대폰에 설치한 **그 APK 파일**과 **당시 사용한 실제 keystore(.jks/debug.keystore)**, 키 alias를 준비합니다. Android Studio에서 로컬 빌드했다면 `C:\Users\<사용자>\.android\debug.keystore`일 수 있습니다.
+- PowerShell에서 스크립트 실행: 
+  `./scripts/configure-original-signing.ps1 -ExistingApk "C:\경로\기존학급관리.apk" -OriginalKeystore "C:\경로\원본.jks" -KeyAlias "androiddebugkey"`
+- 스크립트가 APK와 키의 인증서 지문을 비교한 뒤 일치할 때만 **YES** 확인을 받아 GitHub Secrets를 설정합니다. 비밀번호/키를 GitHub 소스 코드에 기록하지 않습니다.
+- `Actions → 학급관리 APK 검사 및 기존 키로 업데이트 빌드 → Run workflow → feature/class-manager-apk-20261107 → build_signed_update: true`로 실행합니다. 결과 `ClassManager-SIGNED-UPDATE`의 APK만 앱 업데이트에 사용합니다.
+
+필수 저장소 Secrets: `CM_SIGNING_KEYSTORE_BASE64`, `CM_SIGNING_STORE_PASSWORD`, `CM_SIGNING_KEY_ALIAS`, `CM_SIGNING_KEY_PASSWORD`, `CM_SIGNING_EXPECTED_SHA256`. 필요한 경우 `CM_SIGNING_STORE_TYPE` (예: JKS/PKCS12)도 설정하세요.
+
+### 원본 개인키가 없을 때
+원래 설치된 앱에 대한 덮어쓰기 업데이트는 기술적으로 불가능합니다. **학생 명렬, 자리배치, 출결 전체 JSON을 먼저 백업**하고, 신규 **고정 서명 키로 새 버전을 최초 1회 설치**하는 전환 절차가 필요합니다. 새로운 keystore를 만든 뒤 위와 동일하게 Repository Secrets에 보관하면 이후에는 같은 키로 서명하고 versionCode를 올려 기존 데이터 보존 업데이트가 가능합니다.
+
+### 서명 인증서 지문 참조 (이전 제공 파일)
+- 초기 학급관리 APK: `5C7E64820E6FC0C7936FD9FE4E4135B731CED16602CB98DB4E88925E1B27C2E7`
+- 10가지 테마 v1.1.0 APK: `422F4EA8541B6AD3BF1C5F5892C167485006CE22D9315E2B15A936F2C9FDDEE3`
+- 출결 개선 v1.2.0 APK: `CD9677B7A2EFDA0EA8B48B2A5BCC3E48C29068E33D56AD0F5A1561BF5846E124`
+- 출결 관리 v1.3.0 APK: `9631EAA493F00181B7B3B44A7F6721C184CB54E66B3ABD90A870841763BED0D2`
+
+서명 지문만으로는 원래 개인키가 복구되지 않습니다. 휴대폰에 실제 설치된 APK가 어떤 것인지 확인해야 합니다.
+
+**보안:** 개인키·비밀번호를 채팅, 공개 저장소, 공용 링크, 소스 코드에 공유하지 마세요. 원본 키의 별도 암호화 백업도 권장합니다.
