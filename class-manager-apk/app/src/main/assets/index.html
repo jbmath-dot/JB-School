@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173d70"><title>학급관리 · 테마 10종</title>
+<script>try{document.documentElement.setAttribute('data-ui-theme',localStorage.getItem('jb-class-ui-theme-v1')||'navy-gold')}catch(e){document.documentElement.setAttribute('data-ui-theme','navy-gold')}</script>
+<link rel="stylesheet" href="themes.css">
+<style>
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body.cm-app{display:flex;flex-direction:column;font-family:system-ui,-apple-system,"Malgun Gothic","Noto Sans KR",sans-serif;color:var(--ui-text);background:var(--ui-bg)}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--ui-ring);outline-offset:2px}
+.cm-header{flex-shrink:0;background:var(--ui-hero);color:var(--ui-hero-ink);position:relative;overflow:hidden;padding:13px 15px 12px}
+.cm-header::after{content:"";position:absolute;right:-26px;top:-70px;width:185px;height:185px;border-radius:50%;border:22px solid rgba(255,255,255,.09);pointer-events:none}
+.cm-headrow{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+.cm-brand{display:flex;align-items:center;gap:10px}
+.cm-logo{width:40px;height:40px;display:grid;place-items:center;background:var(--ui-decoration);color:var(--ui-hero-ink);font-size:1.18rem;font-weight:900;border-radius:12px}
+.cm-brand h1{margin:0;font-size:1.3rem;letter-spacing:-.065em;line-height:1.15;color:inherit}
+.cm-headsub{font-size:.72rem;opacity:.85;margin-top:4px}
+.cm-top-actions{display:flex;align-items:center;gap:7px}
+.cm-headbtn{min-height:41px;border-radius:12px;border:1px solid rgba(255,255,255,.45);color:var(--ui-hero-ink);background:rgba(255,255,255,.12);padding:7px 11px;font-size:.86rem;font-weight:800;white-space:nowrap}
+.cm-theme-pip{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ui-decoration);border:1px solid rgba(255,255,255,.6);margin-right:6px;vertical-align:-1px}
+.cm-workspace{position:relative;min-height:0;flex:1}
+#homeScreen{height:100%;overflow:auto;overscroll-behavior:contain}
+#homeScreen[hidden]{display:none}
+.cm-home{width:min(1050px,100%);margin:0 auto;padding:16px 13px 40px}
+.cm-hero{background:var(--ui-hero);color:var(--ui-hero-ink);border-radius:var(--ui-radius);padding:19px 17px 17px;position:relative;overflow:hidden;box-shadow:var(--ui-shadow)}
+.cm-hero::after{content:"✦";position:absolute;right:18px;top:6px;font-size:5.6rem;color:var(--ui-decoration);opacity:.25;transform:rotate(-9deg);pointer-events:none}
+.cm-greeting{font-weight:900;font-size:1.2rem;letter-spacing:-.04em}
+.cm-classline{margin-top:7px;opacity:.92;font-size:.94rem}
+.cm-date{margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border-radius:999px;padding:7px 11px;font-size:.8rem;font-weight:700}
+.cm-kicker{font-size:.78rem;font-weight:850;color:var(--ui-muted);letter-spacing:.02em;margin:23px 2px 10px;display:flex;align-items:center;justify-content:space-between}
+.cm-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.cm-feature{color:var(--ui-tile-ink);border:1px solid var(--ui-line);border-radius:var(--ui-radius);min-width:0;min-height:126px;background:var(--ui-a);padding:13px 8px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;font-weight:850;font-size:.98rem;letter-spacing:-.03em;box-shadow:var(--ui-shadow)}
+.cm-feature:nth-child(2){background:var(--ui-b)}
+.cm-feature:nth-child(3){background:var(--ui-c)}
+.cm-feature:active{transform:scale(.98)}
+.cm-feature .icon{width:47px;height:47px;border-radius:14px;display:grid;place-items:center;border:1px solid currentColor;background:rgba(255,255,255,.18);font-size:1.7rem}
+.cm-feature small{font-size:.7rem;opacity:.88;font-weight:650;letter-spacing:-.02em;text-align:center}
+.cm-grid-panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.cm-surface{background:var(--ui-panel);border:1px solid var(--ui-line);color:var(--ui-text);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);padding:15px;min-width:0}
+.cm-surface h2{font-size:1rem;margin:0 0 12px;letter-spacing:-.035em}
+.cm-att-numbers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.cm-nbox{border-radius:13px;background:var(--ui-soft);padding:10px 4px;text-align:center}
+.cm-nbox:nth-child(1){background:var(--ui-present-bg)}
+.cm-nbox:nth-child(2){background:var(--ui-recognized-bg)}.cm-nbox:nth-child(3){background:var(--ui-absent-bg)}
+.cm-nbox:nth-child(4){background:var(--ui-late-bg)}
+.cm-nbox .amount{font-size:1.4rem;font-weight:900;font-variant-numeric:tabular-nums}
+.cm-nbox .label{font-size:.73rem;color:var(--ui-muted);margin-top:3px}
+.cm-lowhint{font-size:.79rem;margin:10px 0 0;color:var(--ui-muted);line-height:1.5}
+.cm-mini-board{border:1px solid var(--ui-line);background:var(--ui-soft);padding:9px;border-radius:13px;margin-bottom:10px}
+.cm-seats{display:grid;gap:5px}
+.cm-seat{display:block;height:15px;border:1px solid var(--ui-seat-line);background:var(--ui-seat);border-radius:5px;min-width:0;text-align:center;color:var(--ui-muted);font-size:9px;line-height:13px}
+.cm-seat.none{opacity:.28;border-style:dashed}
+.cm-lectern{background:var(--ui-lectern);border:1px solid var(--ui-primary);color:var(--ui-primary);border-radius:7px;padding:3px;text-align:center;font-size:.67rem;margin:9px auto 0;max-width:46%}
+.cm-nostudents{font-size:.83rem;color:var(--ui-muted);text-align:center;padding:16px 8px;line-height:1.5}
+.cm-quick{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+.cm-quick button{min-height:43px;border:1px solid var(--ui-line);background:var(--ui-panel);color:var(--ui-text);border-radius:12px;padding:9px 14px;flex:1;font-size:.82rem;font-weight:800}
+.cm-recent{margin-top:14px;font-size:.8rem;color:var(--ui-muted);line-height:1.5}
+.cm-recent span{color:var(--ui-text)}
+.cm-frame{display:none;width:100%;height:100%;border:0;background:var(--ui-bg)}
+.cm-frame.active{display:block}
+.cm-navbar{flex-shrink:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:7px 6px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--ui-line);background:var(--ui-panel);box-shadow:0 -3px 18px rgba(18,35,68,.055)}
+.cm-navbar button{border:0;background:transparent;color:var(--ui-muted);min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.65rem;font-weight:800;padding:4px 1px;border-radius:10px}
+.cm-navbar .ni{font-size:1.25rem;line-height:1.2}
+.cm-navbar button.active{background:var(--ui-soft);color:var(--ui-primary)}
+.cm-navbar button:active{opacity:.7}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,17,32,.64);z-index:70;padding:12px}
+.overlay.open{display:flex}
+.dialog{width:min(97vw,680px);max-height:92dvh;overflow:auto;border-radius:var(--ui-radius);background:var(--ui-panel);color:var(--ui-text);padding:18px;border:1px solid var(--ui-line);box-shadow:0 14px 55px rgba(2,13,36,.24)}
+.dialog h2{margin:0 0 5px;font-size:1.2rem}
+.help{font-size:.82rem;color:var(--ui-muted);line-height:1.55;margin:7px 0}
+.dialog textarea{width:100%;min-height:102px;border:1px solid var(--ui-line);border-radius:10px;padding:10px;background:var(--ui-panel);color:var(--ui-text);font:inherit}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.row button,.confirm{border:1px solid var(--ui-line);border-radius:11px;background:var(--ui-soft);color:var(--ui-text);padding:10px 12px;min-height:44px;font-weight:800}
+.row .primary,.confirm{background:var(--ui-primary);color:var(--ui-primary-ink);border-color:var(--ui-primary)}
+.tablewrap{max-height:35dvh;overflow:auto;margin:9px 0}
+.review{width:100%;border-collapse:collapse}
+.review td,.review th{padding:5px;border-bottom:1px solid var(--ui-line);font-size:.86rem;text-align:left}
+.review input{font:inherit;border:1px solid var(--ui-line);background:var(--ui-panel);color:var(--ui-text);border-radius:7px;min-height:36px;padding:5px;width:100%;min-width:50px}
+.review td:first-child{font-weight:800;width:50px;white-space:nowrap}
+.notice{padding:10px;background:var(--ui-soft);font-size:.8rem;color:var(--ui-muted);border-radius:10px}
+.cm-theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+.cm-choice{display:block;text-align:left;border:2px solid var(--ui-line);border-radius:16px;min-width:0;padding:8px;background:var(--ui-panel);color:var(--ui-text);min-height:182px}
+.cm-choice[aria-pressed="true"]{border-color:var(--ui-primary);box-shadow:0 0 0 2px var(--ui-ring)}
+.cm-choice[aria-pressed="true"] .cm-selected{background:var(--ui-primary);color:var(--ui-primary-ink)}
+.cm-preview{height:104px;border-radius:11px;overflow:hidden;background:var(--p-bg);border:1px solid var(--p-line);position:relative}
+.cm-previewbar{height:32px;background:var(--p-hero);color:var(--p-header);font-size:.7rem;font-weight:850;padding:8px 9px}
+.cm-previewtiles{display:flex;gap:5px;margin:8px}
+.cm-previewtiles i{display:block;flex:1;height:24px;border-radius:6px;background:var(--p-a)}
+.cm-previewtiles i:nth-child(2){background:var(--p-b)}.cm-previewtiles i:nth-child(3){background:var(--p-c)}
+.cm-previewrow{margin:5px 8px;height:17px;border-radius:5px;background:var(--p-panel);border:1px solid var(--p-line)}
+.cm-choice-title{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;font-weight:850;font-size:.82rem}
+.cm-selected{border-radius:999px;padding:3px 6px;font-size:.65rem;background:var(--ui-soft);color:var(--ui-muted)}
+.cm-choice-desc{color:var(--ui-muted);font-size:.73rem;margin-top:5px}
+.cm-settings-tip{font-size:.8rem;color:var(--ui-muted);line-height:1.5;padding:10px;background:var(--ui-soft);border-radius:10px}
+:root[data-ui-theme="notebook"] .cm-hero{background-image:repeating-linear-gradient(0deg,transparent,transparent 26px,rgba(148,105,58,.07) 27px,transparent 28px),var(--ui-hero)}
+:root[data-ui-theme="neon"] .cm-feature:first-child{box-shadow:0 0 0 1px var(--ui-ring),0 0 16px rgba(36,194,255,.32)}
+:root[data-ui-theme="minimal"] .cm-feature:first-child{color:#fff}
+:root[data-ui-theme="minimal"] .cm-feature:nth-child(n+2){color:#18233c}
+:root[data-ui-theme="navy-gold"] .cm-feature{border-bottom:4px solid #eac46e}
+:root[data-ui-theme="lavender"] .cm-feature:first-child{color:#fff}
+:root[data-ui-theme="glass"] .cm-feature,:root[data-ui-theme="glass"] .cm-hero{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+@media(max-width:380px){.cm-att-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){
+ .cm-grid-panels{grid-template-columns:1fr}
+ .cm-home{padding:12px 10px 26px}
+ .cm-feature{min-height:115px;padding:10px 4px;font-size:.86rem}
+ .cm-feature .icon{width:42px;height:42px}
+ .cm-feature small{font-size:.63rem}
+ .cm-surface{padding:13px}
+}
+@media(max-width:350px){.cm-navbar button{font-size:.59rem}.cm-feature small{display:none}.cm-theme-grid{gap:7px}.cm-choice{padding:5px}}
+@media(min-width:620px){.cm-header{padding:15px 28px}.cm-home{padding:22px}.cm-navbar{display:flex;justify-content:center}.cm-navbar button{width:116px}.cm-feature{min-height:145px}}
+</style></head>
+<body class="cm-app">
+<header class="cm-header">
+  <div class="cm-headrow">
+    <div class="cm-brand"><div class="cm-logo" aria-hidden="true">▦</div><div><h1>학급관리</h1><div class="cm-headsub">자리교체 · 출결 · 명렬 사진</div></div></div>
+    <div class="cm-top-actions"><button class="cm-headbtn" id="openTheme" type="button" aria-label="테마 선택 열기"><span class="cm-theme-pip"></span><span id="headerThemeName">테마 변경</span></button></div>
+  </div>
+</header>
+<main class="cm-workspace">
+  <section id="homeScreen">
+    <div class="cm-home">
+      <section class="cm-hero"><div class="cm-greeting">오늘도 우리 반을 편리하게</div><div id="classLabel" class="cm-classline">학급을 설정해 주세요</div><div id="dateLabel" class="cm-date">날짜 확인 중</div></section>
+      <div class="cm-kicker">주요 기능 <span id="homeClassStatus">기기 내부 저장</span></div>
+      <div class="cm-features">
+        <button class="cm-feature" id="quickSeats" type="button"><span class="icon" aria-hidden="true">⇄</span><span>자리교체</span><small>확정·배치 기록</small></button>
+        <button class="cm-feature" id="quickAttend" type="button"><span class="icon" aria-hidden="true">✓</span><span>출결 관리</span><small>날짜별 출결</small></button>
+        <button class="cm-feature" id="quickPhoto" type="button"><span class="icon" aria-hidden="true">▣</span><span>명렬 사진</span><small>촬영·문자 인식</small></button>
+      </div>
+      <div class="cm-grid-panels">
+        <section class="cm-surface"><h2>오늘 출결 현황</h2><div class="cm-att-numbers">
+          <div class="cm-nbox"><div class="amount" id="homePresent">—</div><div class="label">출석</div></div>
+          <div class="cm-nbox"><div class="amount" id="homeRecognized">—</div><div class="label">출석인정</div></div>
+          <div class="cm-nbox"><div class="amount" id="homeAbsence">—</div><div class="label">결석</div></div>
+          <div class="cm-nbox"><div class="amount" id="homeLate">—</div><div class="label">지각</div></div>
+        </div><p class="cm-lowhint" id="homeUnrecorded">출결은 입력 기록 기준으로 표시됩니다.</p></section>
+        <section class="cm-surface"><h2>확정 자리배치 · 교탁 시점</h2><div class="cm-mini-board"><div id="miniSeat" class="cm-seats"></div><div class="cm-lectern">교탁</div></div><p class="cm-lowhint" id="seatSummary">확정된 자리가 없습니다.</p></section>
+      </div>
+      <div class="cm-quick"><button id="quickHistory" type="button">지난 날짜 기록</button><button id="quickBackup" type="button">백업·복원</button><button id="quickThemes" type="button">테마 10종 보기</button></div>
+      <div class="cm-recent" id="homeRecent" aria-live="polite"></div>
+    </div>
+  </section>
+  <iframe class="cm-frame" id="seatFrame" src="seat.html" title="자리교체 · 명렬"></iframe>
+  <iframe class="cm-frame" id="attendanceFrame" src="attendance.html" title="날짜별 출결"></iframe>
+</main>
+<nav class="cm-navbar" aria-label="하단 메뉴">
+ <button type="button" id="bHome" class="active"><span class="ni" aria-hidden="true">⌂</span>홈</button>
+ <button type="button" id="bSeat"><span class="ni" aria-hidden="true">⇄</span>자리교체</button>
+ <button type="button" id="bAttend"><span class="ni" aria-hidden="true">☑</span>출결 관리</button>
+ <button type="button" id="bPhoto"><span class="ni" aria-hidden="true">▣</span>명렬 사진</button>
+ <button type="button" id="bThemes"><span class="ni" aria-hidden="true">◉</span>테마</button>
+</nav>
+<div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="photoTitle"><section class="dialog">
+<h2 id="photoTitle">명렬 사진 가져오기</h2><p class="help">명렬표를 촬영하거나 휴대폰 사진을 고르면 기기 안에서 한글을 인식합니다. 인식 후 번호와 이름을 꼭 검토하고 수정하세요. 사진은 외부로 전송되지 않습니다.</p>
+<div class="row"><button id="gallery" class="primary">사진 선택</button><button id="camera">사진 촬영</button><button id="close">닫기</button></div>
+<p class="help">① 인식된 문장 (필요하면 직접 수정)</p><textarea id="ocrText" placeholder="1 김하늘 반장&#10;2 이바다&#10;3 박푸름"></textarea>
+<div class="row"><button id="analyze">② 번호·이름 추출</button></div><p class="help" id="info"></p><div class="tablewrap" id="results"></div>
+<button class="confirm" id="apply" style="display:none">③ 검토한 명렬 반영</button><p class="notice" id="warn">확정 배치가 있으면 같은 번호의 이름이 출결에 반영됩니다. 사진 인식 오류는 반드시 확인하세요.</p>
+</section></div>
+
+<div id="themesOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="themesTitle">
+  <section class="dialog" style="max-width:670px">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-top:0"><div><h2 id="themesTitle">전체 화면 테마 선택</h2><p class="help">10가지 테마 · 홈, 자리교체, 출결, 명렬 사진에 동시 적용</p></div><button id="closeThemes" type="button" aria-label="테마 선택 닫기">닫기 ✕</button></div>
+    <div id="themeGrid" class="cm-theme-grid" aria-label="테마 목록"></div>
+    <p class="cm-settings-tip">테마는 이 휴대폰에 자동 저장됩니다. 학생 명단·배치·출결 기록에는 영향을 주지 않으며 인터넷 연결 없이 변경할 수 있습니다.</p>
+  </section>
+</div>
+<script>
+
+'use strict';const $=id=>document.getElementById(id), sf=$('seatFrame'),af=$('attendanceFrame');let view='home';
+function read(k,fallback){try{return JSON.parse(localStorage.getItem(k))||fallback;}catch(e){return fallback;}}
+function show(name){
+  view=name;
+  sf.classList.toggle('active',name==='seat'); af.classList.toggle('active',name==='attend');
+  $('homeScreen').hidden=name!=='home';
+  ['bHome','bSeat','bAttend'].forEach(id=>{$(id).classList.toggle('active', id==='b'+(name==='home'?'Home':name==='seat'?'Seat':'Attend'));});
+  $('bPhoto').classList.remove('active');$('bThemes').classList.remove('active');
+  if(name==='attend')sync();if(name==='home')renderHome();
+}
+function today(){let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function sync(){let seat=read('jb-seat-swap-v1',null);if(!seat||!seat.locked)return;
+ let sig=JSON.stringify([seat.lockRecordId,seat.count,seat.cols,seat.seats,seat.pairs,seat.names,seat.className]);if(sig===localStorage.getItem('jb-manager-last-seat'))return;
+ let count=seat.count,cols=seat.cols,arr=seat.seats;if(!Number.isInteger(count)||count<1||count>40||!Number.isInteger(cols)||cols<1||cols>10||!Array.isArray(arr)||arr.length!==Math.ceil(count/cols)*cols)return;
+ let l={source:'class-manager',effectiveFrom:today(),importedAt:new Date().toISOString(),className:seat.className||'',count,cols,seats:arr.slice(),pairs:(seat.pairs||[]).slice(),names:(seat.names||[]).slice(0,count)};
+ let db=read('jb-attendance-local-v2',{v:2,version:0,layouts:[],attendance:{},history:[],recentIds:[]});db.layouts=(db.layouts||[]).filter(x=>!(x.source==='class-manager'&&x.effectiveFrom===l.effectiveFrom));db.layouts.push(l);db.layouts.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom)||String(a.importedAt||'').localeCompare(String(b.importedAt||'')));
+ localStorage.setItem('jb-attendance-local-v2',JSON.stringify(db));localStorage.setItem('jb-manager-last-seat',sig);af.src='attendance.html';}
+$('bSeat').onclick=()=>show('seat');$('bAttend').onclick=()=>show('attend');$('bPhoto').onclick=()=>{$('overlay').classList.add('open')};
+$('close').onclick=()=>{$('overlay').classList.remove('open')};
+$('gallery').onclick=()=>{if(window.AndroidApp)AndroidApp.pickRosterPhoto('gallery');else $('info').textContent='사진 속 한글 인식은 APK에서 동작합니다. 텍스트를 직접 입력해 검토할 수 있습니다.'};
+$('camera').onclick=()=>{if(window.AndroidApp)AndroidApp.pickRosterPhoto('camera');else $('info').textContent='카메라 인식은 APK에서 지원합니다.'};
+window.receiveRosterOcr=(text,error)=>{$('overlay').classList.add('open');if(error){$('info').textContent='인식 오류: '+error;return;}$('ocrText').value=text||'';analyze()};
+function parse(text){let rows=[],bad=[],seen=new Set(),next=1;
+ function add(n,name,note,original){if(n<1||n>40||seen.has(n)){bad.push(original);return;}seen.add(n);rows.push({n,name,note});next=n+1;}
+ for(let line of String(text).split(/\r?\n/).map(x=>x.trim()).filter(Boolean)){
+  if(/^(번호|이름|성명|순번|비고|학년|학급|명렬|명단)/.test(line))continue;
+  let re=/(?:^|[\s\t,;])(\d{1,2})\s*(?:번|[.)\]:：-])?\s*([가-힣]{2,7})/g,ms=[],m;
+  while((m=re.exec(line)))ms.push({start:m.index,end:re.lastIndex,n:Number(m[1]),name:m[2]});
+  if(ms.length){ms.forEach((v,i)=>add(v.n,v.name,line.slice(v.end,i+1<ms.length?ms[i+1].start:line.length).trim(),line))}
+  else {let k=line.match(/^([가-힣]{2,7})(?:\s+(.+))?$/);if(k)add(next,k[1],k[2]||'',line);else bad.push(line)}
+ }
+ rows.sort((a,b)=>a.n-b.n);return{rows,bad};
+}
+function analyze(){let p=parse($('ocrText').value),area=$('results');area.replaceChildren();let t=document.createElement('table');t.className='review';let head=document.createElement('tr');['번호','이름','비고'].forEach(x=>{let c=document.createElement('th');c.textContent=x;head.append(c)});t.append(head);
+ p.rows.forEach(r=>{let tr=document.createElement('tr');tr.dataset.n=r.n;let n=document.createElement('td');n.textContent=r.n+'번';tr.append(n);for(let value of [r.name,r.note]){let td=document.createElement('td'),inp=document.createElement('input');inp.value=value;inp.maxLength=value===r.name?20:30;td.append(inp);tr.append(td)}t.append(tr)});
+ area.append(t);$('apply').style.display=p.rows.length?'':'none';$('info').textContent=p.rows.length+'명 인식'+(p.bad.length?' · 해석 못 한 줄 '+p.bad.length+'개 (텍스트를 수정해 다시 추출하세요)':'')+'.';}
+$('analyze').onclick=analyze;
+$('apply').onclick=()=>{let state=read('jb-seat-swap-v1',null);if(!state){alert('먼저 자리교체 화면에서 학급을 설정해 주세요.');return;}
+ let rows=[...$('results').querySelectorAll('tr[data-n]')].map(tr=>({n:Number(tr.dataset.n),name:tr.querySelectorAll('input')[0].value.trim(),note:tr.querySelectorAll('input')[1].value.trim()})).filter(r=>r.name);
+ if(!rows.length)return;let max=Math.max(...rows.map(r=>r.n));if(max>state.count){alert('현재 인원은 '+state.count+'명입니다. 자리교체에서 인원을 '+max+'명 이상으로 늘린 뒤 진행해 주세요.');return;}
+ if(!confirm(rows.length+'명의 명렬을 기존 이름에 덮어쓸까요?'))return;
+ rows.forEach(r=>{state.names[r.n-1]=r.name.slice(0,20);if(r.note)state.notes[r.n-1]=r.note.slice(0,30)});
+ localStorage.setItem('jb-seat-swap-v1',JSON.stringify(state));sf.src='seat.html';if(state.locked)sync();$('overlay').classList.remove('open');show('seat');alert(rows.length+'명의 명렬을 반영했습니다.');};
+window.addEventListener('message',e=>{if(e.source===sf.contentWindow&&e.origin===location.origin&&e.data?.type==='jb-seat-updated'&&e.data.locked)sync()});
+window.addEventListener('load',()=>{show('home');});
+
+/* 모든 화면의 실시간 테마 적용 및 사용자 설정 저장. 기존 자리·출결 데이터 키를 변경하지 않는다. */
+const THEME_KEY='jb-class-ui-theme-v1';
+const THEMES=[
+{id:'navy-gold',name:'01 네이비 골드',desc:'차분한 프리미엄 학사형',palette:['#f3f6fb','#173d70','#173b6b','#1c477c','#284e82','#ffffff','#d8e2ef','#fff']},
+{id:'mint',name:'02 민트 스마트',desc:'친근하고 편안한 민트',palette:['#effbf7','#098878','#ccf4e9','#8bdfd0','#d8f8ed','#fff','#cbece4','#135149']},
+{id:'notebook',name:'03 노트 베이지',desc:'따뜻한 종이와 필기 감성',palette:['#fbf3e7','#8b5a36','#fee6d8','#f4ead6','#eee3fa','#fffaf0','#e4ceb0','#5b3c29']},
+{id:'neon',name:'04 네온 블루',desc:'눈에 띄는 고대비 다크',palette:['#070f1e','#4cceff','#092e59','#132a4c','#1c2450','#111f36','#36547b','#f8fbff']},
+{id:'classroom',name:'05 칠판 그린',desc:'학교 교실을 닮은 녹색',palette:['#f5faf4','#218252','#e6f8d8','#fff0c8','#ffe6ee','#fff','#d5e7d7','#fff']},
+{id:'lavender',name:'06 라벤더',desc:'보랏빛 파스텔·부드러운 카드',palette:['#f6f1ff','#7551c7','#9266da','#dfc9fb','#cbb0f8','#fff','#e4d9f5','#392268']},
+{id:'minimal',name:'07 미니멀 블루',desc:'군더더기 없는 업무형',palette:['#f9fafc','#1554f0','#1554f0','#f1f4f9','#f1f4f9','#fff','#e1e5ec','#172137']},
+{id:'glass',name:'08 글래스 블루',desc:'반투명 유리와 푸른 그라데이션',palette:['#d6e7ff','#236dd6','#d8ddff','#b6f0f3','#e2d2ff','#fff','#bbd5f2','#fff']},
+{id:'sky-coral',name:'09 스카이 코랄',desc:'밝은 하늘색·코랄 포인트',palette:['#eff8ff','#2585c9','#d1eeff','#ffe0db','#d7efff','#fff','#d6e8fa','#1c517a']},
+{id:'indigo-peach',name:'10 인디고 피치',desc:'은은한 인디고와 복숭아색',palette:['#f5f1ff','#6660b7','#e0d9ff','#ffdddb','#e3dcff','#fff','#e7e1f4','#fff']}
+];
+function readTheme(){try{let t=localStorage.getItem(THEME_KEY);return THEMES.some(x=>x.id===t)?t:'navy-gold';}catch(e){return'navy-gold';}}
+let selectedTheme=readTheme();
+function setFrameTheme(frame){try{if(frame.contentDocument&&frame.contentDocument.documentElement){frame.contentDocument.documentElement.setAttribute('data-ui-theme',selectedTheme);}}catch(e){}}
+function applyUiTheme(id,persist=true){
+ if(!THEMES.some(t=>t.id===id))return;
+ selectedTheme=id;document.documentElement.setAttribute('data-ui-theme',id);
+ if(persist){try{localStorage.setItem(THEME_KEY,id)}catch(e){}}
+ setFrameTheme(sf);setFrameTheme(af);
+ let t=THEMES.find(x=>x.id===id);
+ $('headerThemeName').textContent=t.name.replace(/^\d+\s/,'');
+ document.querySelector('meta[name="theme-color"]').setAttribute('content',id==='neon'?'#070f1e':id==='classroom'?'#205c40':id==='navy-gold'?'#173d70':id==='indigo-peach'?'#5555a4':'#f3f6fb');
+ if(window.AndroidApp&&AndroidApp.setThemeBars)try{AndroidApp.setThemeBars(id)}catch(e){}
+ renderThemes();
+}
+function renderThemes(){
+ let area=$('themeGrid');area.replaceChildren();
+ THEMES.forEach(t=>{
+  let b=document.createElement('button');b.type='button';b.className='cm-choice';b.setAttribute('aria-pressed',String(t.id===selectedTheme));b.setAttribute('aria-label',t.name+' 테마 적용');
+  let p=document.createElement('div');p.className='cm-preview';
+  let c=t.palette;p.style.cssText='--p-bg:'+c[0]+';--p-hero:'+c[1]+';--p-a:'+c[2]+';--p-b:'+c[3]+';--p-c:'+c[4]+';--p-panel:'+c[5]+';--p-line:'+c[6]+';--p-header:'+c[7];
+  p.innerHTML='<div class="cm-previewbar">학급관리</div><div class="cm-previewtiles"><i></i><i></i><i></i></div><div class="cm-previewrow"></div>';
+  b.append(p);
+  let n=document.createElement('div');n.className='cm-choice-title';n.append(document.createTextNode(t.name));
+  let selected=document.createElement('span');selected.className='cm-selected';selected.textContent=t.id===selectedTheme?'선택됨':'적용';n.append(selected);b.append(n);
+  let d=document.createElement('div');d.className='cm-choice-desc';d.textContent=t.desc;b.append(d);
+  b.onclick=()=>{applyUiTheme(t.id);closeThemePicker();};area.append(b);
+ });
+}
+let lastFocused=null;
+function openThemePicker(){lastFocused=document.activeElement;$('themesOverlay').classList.add('open');renderThemes();$('closeThemes').focus();}
+function closeThemePicker(){$('themesOverlay').classList.remove('open');if(lastFocused&&lastFocused.focus)lastFocused.focus();}
+$('openTheme').onclick=openThemePicker;$('bThemes').onclick=openThemePicker;$('quickThemes').onclick=openThemePicker;
+$('closeThemes').onclick=closeThemePicker;
+$('themesOverlay').addEventListener('click',e=>{if(e.target===$('themesOverlay'))closeThemePicker()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('themesOverlay').classList.contains('open'))closeThemePicker()});
+$('bHome').onclick=()=>show('home');
+$('quickSeats').onclick=()=>show('seat');
+$('quickAttend').onclick=()=>show('attend');
+$('quickPhoto').onclick=()=>$('overlay').classList.add('open');
+$('quickHistory').onclick=()=>show('attend');
+$('quickBackup').onclick=()=>show('attend');
+function homeDate(){let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function renderHome(){
+ const s=read('jb-seat-swap-v1',null),db=read('jb-attendance-local-v2',{attendance:{},history:[]}),date=homeDate();
+ const d=new Date();$('dateLabel').textContent=d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+ $('classLabel').textContent=s?(s.className||'학급')+' · '+s.count+'명':'학급을 설정하면 자리·출결 현황이 표시됩니다';
+ $('homeClassStatus').textContent=s?.locked?'확정된 자리배치 사용 중':'자리 미확정 · 기기 내부 저장';
+ const rec=db?.attendance?.[date]||{};
+ let count={present:0,recognized:0,absence:0,late:0,early:0,missed:0,unrecorded:0};
+ const n=Number(s?.count)||0;
+ for(let k=1;k<=n;k++){const cell=rec[String(k)];let val=cell?.reason==='recognized'&&cell?.status!=='present'&&cell?.status!=='unrecorded'?'recognized':cell?.status||'unrecorded';if(!(val in count))val='unrecorded';count[val]++;}
+ $('homePresent').textContent=n?count.present+'명':'—';
+ $('homeRecognized').textContent=n?count.recognized+'명':'—';
+ $('homeAbsence').textContent=n?count.absence+'명':'—';
+ $('homeLate').textContent=n?count.late+'명':'—';
+ $('homeUnrecorded').textContent=n?'미입력 '+count.unrecorded+'명 · 조퇴 '+count.early+'명 · 결과 '+count.missed+'명 · 입력한 출결만 집계':'확정된 학급 및 출결 기록을 불러오세요.';
+ let grid=$('miniSeat');grid.replaceChildren();
+ if(s?.locked&&Array.isArray(s.seats)&&s.seats.length&&s.cols>=1&&s.cols<=10){
+   let cols=Number(s.cols),rows=Math.ceil(s.seats.length/cols);grid.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';
+   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+     let idx=(rows-1-r)*cols+(cols-1-c);let num=s.seats[idx];let cell=document.createElement('span');
+     cell.className='cm-seat'+(num==null?' none':'');cell.textContent=num==null?'':String(num);grid.append(cell);
+   }
+   $('seatSummary').textContent=cols+'분단 · '+rows+'줄 · 번호 기준 미리보기';
+ }else{
+   grid.style.gridTemplateColumns='1fr';let cell=document.createElement('div');cell.className='cm-nostudents';cell.textContent='자리교체에서 배치를 확정해 주세요.';grid.append(cell);
+   $('seatSummary').textContent='확정된 좌석이 아직 없습니다.';
+ }
+ let notes=[];
+ if(s?.records?.length){let item=s.records[0];notes.push('최근 배치: '+(item.title||'자리 기록')+' · '+(item.savedAt||''));}
+ if(db?.history?.length)notes.push('출결 기록 변경 이력 '+db.history.length+'건');
+ $('homeRecent').replaceChildren();if(notes.length){let lead=document.createElement('strong');lead.textContent='최근 기록 · ';$('homeRecent').append(lead,document.createTextNode(notes.join('  /  ')));}
+}
+sf.addEventListener('load',()=>{setFrameTheme(sf);renderHome()});
+af.addEventListener('load',()=>setFrameTheme(af));
+window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')renderHome()});
+window.addEventListener('message',e=>{if(e.source===sf.contentWindow&&e.origin===location.origin&&e.data?.type==='jb-seat-updated')renderHome()});
+window.addEventListener('storage',e=>{if(e.key===THEME_KEY)applyUiTheme(readTheme(),false);if(e.key==='jb-seat-swap-v1'||e.key==='jb-attendance-local-v2')renderHome()});
+applyUiTheme(selectedTheme,false);show('home');
+</script>
+</body></html>

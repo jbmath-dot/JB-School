@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17345a">
+<title>학급 출결 관리</title>
+<style>
+:root{--bg:#f3f6fa;--card:#fff;--fg:#1d2b3c;--sub:#607085;--line:#dbe3ed;--accent:#2459b8;--accentSoft:#e8f0ff;--good:#177d56;--goodbg:#e2f6ed;--warn:#a15b11;--warnbg:#fff3db;--bad:#b3343b;--badbg:#ffe7e8;--light:#f7f9fc;--shadow:0 4px 22px rgba(12,32,60,.055)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--fg);-webkit-text-size-adjust:100%}
+body{line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:pointer;touch-action:manipulation}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #5aa8ff;outline-offset:2px}
+.shell{max-width:1150px;margin:0 auto;padding:16px 14px 56px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:11px}.logo{display:grid;place-items:center;width:47px;height:47px;border-radius:15px;background:#17345a;color:#fff;font-size:23px;font-weight:800}.top h1{margin:0;font-size:1.4rem;letter-spacing:-.05em}.sub{color:var(--sub);font-size:.83rem}.eyebrow{font-size:.73rem;font-weight:800;color:#607b9e;letter-spacing:.06em}.status{display:flex;gap:7px;align-items:center;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--sub);font-size:.82rem}.dot{height:8px;width:8px;border-radius:50%;background:#b5bdc7}.dot.ok{background:#20a178}.dot.warn{background:#d8a036}
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);gap:15px;margin-top:14px;align-items:start}.column{min-width:0}.panel{border:1px solid var(--line);border-radius:18px;padding:17px;background:var(--card);box-shadow:var(--shadow);margin-bottom:14px}.panel h2{margin:0;font-size:1.09rem;letter-spacing:-.025em}.panel h3{font-size:1rem;margin:0 0 10px}.hd{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:13px}.sm{font-size:.84rem;color:var(--sub)}.muted{color:var(--sub)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:11px;min-height:39px;padding:8px 12px;color:var(--fg);font-weight:700;display:inline-flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;gap:6px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.soft{background:var(--accentSoft);border-color:#b8cdf2;color:#1d4b99}.btn.danger{color:var(--bad);border-color:#f4b9bc}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.small{font-size:.8rem;min-height:34px;padding:6px 9px}.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.date-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.date-input{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.date-input input{border:1px solid var(--line);border-radius:11px;padding:8px 10px;min-height:41px;color:var(--fg);background:white;font-weight:700;max-width:188px}.date-day{font-size:.8rem;color:var(--sub);margin-top:5px}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:14px}.stat{padding:12px 6px;background:var(--light);border:1px solid var(--line);border-radius:12px;text-align:center}.stat .n{font-size:1.35rem;font-weight:850;line-height:1.2;font-variant-numeric:tabular-nums}.stat .lab{font-size:.76rem;color:var(--sub);margin-top:4px}.stat.danger .n{color:var(--bad)}.stat.good .n{color:var(--good)}
+.board-header{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}.boardwrap{overflow-x:auto;overscroll-behavior-x:contain;padding:2px 3px 7px}.board{display:flex;flex-direction:column;gap:13px;min-width:var(--boardMin,100%)}.seatgrid{display:grid;gap:var(--gy,9px) var(--gx,9px)}.seat{position:relative;min-width:0;min-height:77px;border:2px solid #d1dce9;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;padding:6px 4px;line-height:1.18;color:var(--fg);transition:background .12s,border-color .12s}.seat:not(.empty):active{transform:scale(.985)}.seat.empty{border-style:dashed;background:#f4f6f9;color:#8b98a8;cursor:default}.seat .no{font-size:.75rem;font-weight:800;color:var(--sub)}.seat .name{font-size:clamp(.72rem,1.65vw,.98rem);font-weight:850;word-break:keep-all;overflow-wrap:anywhere;text-align:center}.seat .tag{font-size:.67rem;font-weight:850;color:inherit;line-height:1.2}.seat.unrecorded{border-color:#c6d0df;background:#f9fbfe}.seat.present{border-color:#b9e2cf;background:#effaf4}.seat.absence{border-color:#eaa6ae;background:#fff0f1}.seat.late,.seat.early,.seat.missed{border-color:#e9ca82;background:#fff7e9}.seat.recognized{border-color:#93c3e8;background:#edf6ff}.seat.join-r{border-top-right-radius:3px;border-bottom-right-radius:3px}.seat.join-l{border-top-left-radius:3px;border-bottom-left-radius:3px}.lectern{align-self:center;min-width:38%;max-width:65%;border:2px solid #7ca4d5;color:#274c7a;background:#e8f1ff;border-radius:11px;padding:9px;text-align:center;font-weight:900;letter-spacing:.16em}.board-note{text-align:center;font-size:.78rem;color:var(--sub)}.seat .tag.recog{color:#1a639e}
+.legend{display:flex;gap:8px 12px;flex-wrap:wrap;margin-top:12px}.legend span{font-size:.75rem;color:var(--sub);display:inline-flex;align-items:center;gap:5px}.legend b{width:11px;height:11px;border-radius:3px;display:inline-block;background:var(--line)}.legend .v1{background:#e8f6ed}.legend .v2{background:#ffe8e9}.legend .v3{background:#fff0cc}.legend .v4{background:#e2efff}
+.list{display:flex;flex-direction:column;gap:7px}.studentrow{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:var(--card);width:100%;text-align:left}.studentrow:hover{background:var(--light)}.studentrow .bubble{width:27px;height:27px;flex-shrink:0;border-radius:9px;display:grid;place-items:center;background:var(--accentSoft);color:#254c86;font-weight:800;font-size:.77rem}.studentrow .student-name{flex:1;min-width:0;font-weight:750}.pill{border-radius:999px;padding:4px 8px;font-size:.73rem;font-weight:800;white-space:nowrap;background:#f1f4f8;color:#69798c}.pill.present{background:var(--goodbg);color:var(--good)}.pill.absence{background:var(--badbg);color:var(--bad)}.pill.early,.pill.late,.pill.missed{background:var(--warnbg);color:var(--warn)}.pill.recognized{background:#e2f1ff;color:#185d99}
+.tabbar{display:flex;gap:7px;padding:5px;background:#eef3f9;border-radius:12px;margin-bottom:12px}.tabbar button{border:none;background:transparent;flex:1;padding:9px 10px;border-radius:9px;font-weight:800;color:var(--sub)}.tabbar button.active{color:var(--accent);background:white;box-shadow:0 1px 5px #dce5ef}
+.notice{border-left:3px solid #d39a3e;background:#fff8e9;padding:11px 12px;border-radius:0 9px 9px 0;font-size:.82rem;color:#765422;margin:10px 0}.input-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.field{margin:11px 0}.field label{display:block;font-size:.82rem;color:var(--sub);font-weight:750;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;min-height:43px;background:white;color:var(--fg)}.field textarea{min-height:80px;resize:vertical}.filelabel{display:inline-flex}.filelabel input{display:none}details summary{cursor:pointer;font-weight:800}details .settings{padding-top:12px}.help{color:var(--sub);font-size:.8rem;margin:8px 0 0}.emptymsg{padding:30px 14px;border:1px dashed #c5d2e4;border-radius:12px;text-align:center;color:var(--sub);line-height:1.75}.monthly{overflow-x:auto}.monthly table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:.82rem}.monthly th,.monthly td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:center}.monthly th:first-child,.monthly td:first-child{text-align:left}.monthly thead{background:var(--light)}
+.overlay{position:fixed;inset:0;background:rgba(11,24,40,.56);z-index:20;display:none;align-items:center;justify-content:center;padding:14px}.overlay.open{display:flex}.dialog{width:min(96vw,510px);max-height:calc(100vh - 28px);overflow-y:auto;background:white;border-radius:19px;box-shadow:0 20px 70px #14253c40;padding:21px}.dialog h2{margin:0 0 5px;font-size:1.3rem}.dialog .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.dialog .actions>*{flex:1}.presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}.presets button{font-size:.86rem}.dialog .x{float:right;background:none;border:0;font-size:1.45rem;color:#8290a0;line-height:1}.dialog .date-label{font-size:.82rem;color:var(--sub);margin:0 0 12px}
+.footer{font-size:.78rem;line-height:1.65;color:var(--sub);padding:9px}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#142844;color:white;z-index:50;padding:12px 16px;border-radius:12px;max-width:min(94vw,520px);box-shadow:0 8px 25px #152c4655;display:none;font-size:.87rem}.toast.show{display:block}.locked-main{filter:blur(4px);pointer-events:none;user-select:none}
+@media(max-width:860px){.main{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.seat{min-height:70px}.panel{padding:13px}.top h1{font-size:1.24rem}}
+@media(max-width:420px){.shell{padding:10px 9px 42px}.stats{gap:5px}.stat .n{font-size:1.2rem}.stat .lab{font-size:.7rem}.seat{padding:4px 2px}.seat .name{font-size:.78rem}.seat .no{font-size:.69rem}.seat .tag{font-size:.63rem}.btn{font-size:.84rem;padding:7px 10px}.date-input input{max-width:162px}.panel h2{font-size:1.03rem}}
+@media print{body{background:#fff}.shell{max-width:none}.main{display:block}.top,.noprint,.panel.settingspanel,.footer,.toast,.overlay{display:none!important}.panel{box-shadow:none;border:0}.board{min-width:0!important}.seat{break-inside:avoid}.seatgrid{gap:5px}.boardwrap{overflow:visible}}
+
+@media(min-width:861px){.stats{grid-template-columns:repeat(7,minmax(0,1fr))}}
+/* NEIS-inspired attendance-by-period controls; all ten themes inherit shared UI variables. */
+
+.date-work-status{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px 12px;border:1px solid var(--ui-line,var(--line));border-radius:11px;margin-top:12px;background:var(--ui-soft,var(--light));font-size:.86rem;font-weight:800;color:var(--ui-text,var(--fg))}
+.date-work-status.closed{border-color:var(--ui-warn,var(--warn));background:var(--ui-late-bg,var(--warnbg))}
+.bulk-range{display:grid;grid-template-columns:1fr 1fr;gap:9px}.bulk-check{display:flex;gap:9px;align-items:flex-start;margin:12px 0;line-height:1.4;font-size:.83rem;font-weight:750;color:var(--ui-text,var(--fg))}
+.bulk-check input{flex:0 0 19px;width:19px;height:19px;accent-color:var(--ui-primary,var(--accent))}
+#bulkPreview{font-weight:850}
+.record-view{display:flex;flex-direction:column;gap:12px;margin-top:12px;max-height:min(63vh,690px);overflow-y:auto;overscroll-behavior:contain}
+.record-group{border:1px solid var(--ui-line,var(--line));border-radius:12px;overflow:hidden;background:var(--ui-panel,var(--card))}
+.record-group h3{background:var(--ui-soft,var(--accentSoft));border-bottom:1px solid var(--ui-line,var(--line));margin:0;padding:10px 12px;color:var(--ui-text,var(--fg));font-size:.89rem}
+.record-row{width:100%;border:0;border-bottom:1px solid var(--ui-line,var(--line));background:var(--ui-panel,var(--card));color:var(--ui-text,var(--fg));text-align:left;display:grid;grid-template-columns:minmax(90px,.8fr) minmax(76px,.7fr) minmax(100px,1.4fr);gap:7px;padding:10px 12px;min-height:47px;align-items:center}
+.record-row:last-child{border-bottom:0}.record-row:active{background:var(--ui-soft,var(--accentSoft))}
+.record-row span{min-width:0;overflow-wrap:anywhere;font-size:.8rem}
+.record-row .record-primary{font-weight:850}.record-row .record-note{font-size:.71rem;color:var(--ui-muted,var(--sub))}
+@media(max-width:380px){.bulk-range{grid-template-columns:1fr}.record-row{grid-template-columns:minmax(80px,1fr) minmax(66px,.7fr);}.record-row .record-detail{grid-column:1/-1}.tabbar button{font-size:.76rem;padding:9px 4px}}
+.period-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:11px 0 6px}
+.period-chip,.detail-reason-chip{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--ui-line,var(--line));color:var(--ui-text,var(--fg));background:var(--ui-panel,var(--card));border-radius:11px;min-height:46px;padding:8px 5px;font-weight:800;font-size:.89rem;line-height:1.15;text-align:center}
+.period-chip[aria-pressed="true"],.detail-reason-chip[aria-pressed="true"]{background:var(--ui-primary,var(--accent));border-color:var(--ui-primary,var(--accent));color:var(--ui-primary-ink,#fff)}
+.period-chip:disabled{cursor:default;opacity:1}
+.period-chip:disabled[aria-pressed="true"]{background:var(--ui-soft,var(--accentSoft));color:var(--ui-primary,var(--accent));border-color:var(--ui-primary,var(--accent))}
+.detail-reason-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.detail-reason-chip{flex:1 1 96px;max-width:100%;min-height:43px;padding:7px 11px}
+#periodSummary{font-weight:800;color:var(--ui-primary,var(--accent));margin-top:8px}
+#customReasonWrap{margin-top:10px}
+@media(min-width:560px){.period-chips{grid-template-columns:repeat(8,minmax(0,1fr))}}
+</style>
+<link rel="stylesheet" href="themes.css">
+<script>
+try { document.documentElement.setAttribute('data-ui-theme', localStorage.getItem('jb-class-ui-theme-v1') || 'navy-gold'); } catch(e) { document.documentElement.setAttribute('data-ui-theme','navy-gold'); }
+</script>
+</head>
+<body>
+<div class="shell" id="mainApp">
+  <header class="top">
+    <div class="brand"><div class="logo">出</div><div><div class="eyebrow">CLASS ATTENDANCE</div><h1>학급 출결 관리</h1><div class="sub" id="classSubtitle">확정 자리배치를 가져와 시작하세요</div></div></div>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="connectionText">준비 중</span></div>
+  </header>
+  <section class="panel" style="margin-top:15px">
+    <div class="date-row"><div><h2>출결 날짜</h2><div class="date-day" id="dayName">휴대폰·PC의 날짜를 자동 적용</div></div><div class="date-input">
+      <button class="btn" id="prevDay" aria-label="전날">‹</button><input type="date" id="dateInput" aria-label="출결 날짜"><button class="btn" id="nextDay" aria-label="다음 날">›</button><button class="btn soft" id="todayBtn">오늘</button><button type="button" class="btn primary" id="finalizeDate">저장 마감</button><button type="button" class="btn danger" id="reopenDate" hidden>마감 해제</button>
+    </div></div>
+    <div class="date-work-status" id="dateWorkStatus" aria-live="polite"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+  <div class="main">
+    <div class="column">
+      <section class="panel">
+        <div class="board-header"><div><h2>교탁에서 바라본 자리</h2><div class="sm" id="layoutCaption">자리를 누르면 해당 학생의 출결을 입력합니다.</div></div><button id="markAll" class="btn soft small" disabled>미입력 학생 출석 처리</button></div>
+        <div class="boardwrap"><div class="board" id="board"><div class="seatgrid" id="seatGrid"></div><div class="lectern">교탁</div></div></div>
+        <div class="legend"><span><b class="v1"></b>출석</span><span><b class="v2"></b>결석</span><span><b class="v3"></b>지각·조퇴·결과</span><span><b class="v4"></b>출석인정</span><span><b></b>미입력</span></div>
+        <p class="help" id="layoutNotice"></p>
+      </section>
+      <section class="panel"><div class="hd"><div><h2>일일 출결 명렬</h2><div class="sm">좌석을 찾기 어렵다면 여기에서 학생을 선택하세요.</div></div><button class="btn small" id="csvBtn">선택 날짜 교시별 CSV</button></div><div id="dailyList" class="list"></div></section>
+    </div>
+    <div class="column">
+      <section class="panel settingspanel">
+        <div class="hd"><h2>자리배치 가져오기</h2><span class="pill" id="layoutCount">등록 안 됨</span></div>
+        <p class="sm">기존 <b>학급 자리교체</b> 앱에서 <b>배치 확정 → 백업 파일 저장</b>을 실행한 뒤 JSON 파일을 가져오세요. 학생 이름·짝 배치도 함께 읽습니다.</p>
+        <div class="field"><label for="effectiveInput">이 자리배치를 사용하기 시작한 날짜</label><input type="date" id="effectiveInput"></div>
+        <div class="flex"><label class="btn soft filelabel">자리교체 백업 가져오기<input id="seatFile" type="file" accept=".json,application/json"></label><button id="sameBrowser" class="btn">같은 브라우저에서 찾기</button></div>
+        <p class="help">새 자리배치를 가져와도 과거 출결은 삭제되지 않습니다. 날짜에 맞는 자리배치를 자동 표시합니다.</p>
+      </section>
+      <section class="panel">
+        <div class="tabbar"><button type="button" class="active" data-tab="today">선택 날짜</button><button type="button" data-tab="month">월별 집계</button><button type="button" data-tab="records">전체 기록·통계</button></div>
+        <div id="todayPane"><div id="eventSummary"></div></div>
+        <div id="monthPane" hidden><div class="field" style="margin-top:0"><label for="monthInput">집계 월</label><input type="month" id="monthInput"></div><div class="monthly" id="monthTable"></div><p class="help">출석인정 항목은 다른 유형의 건수에서 제외하여 별도 집계합니다. NEIS 반영 전 학교 규정에 따라 확인하세요.</p></div>
+        <div id="recordsPane" hidden>
+          <div class="field" style="margin-top:0"><label for="recordViewSelect">기록 정렬</label>
+            <select id="recordViewSelect">
+              <option value="student">학생별 · 번호 오름차순 → 각 학생의 날짜 과거순</option>
+              <option value="date">날짜별 · 과거순 → 각 날짜의 번호 오름차순</option>
+            </select>
+          </div>
+          <div class="field"><label for="recordScopeSelect">조회 범위</label>
+            <select id="recordScopeSelect"><option value="all">전체 기록</option><option value="month">선택한 월만</option></select>
+          </div>
+          <div class="field" id="recordMonthWrap" hidden><label for="recordMonthInput">조회 월</label><input type="month" id="recordMonthInput"></div>
+          <p class="help" id="recordStats" aria-live="polite"></p>
+          <div id="recordTable" class="record-view"></div>
+          <p class="help">표시된 행을 누르면 해당 날짜로 이동합니다. 마감된 날짜는 마감을 해제해야 수정할 수 있습니다.</p>
+        </div>
+      </section>
+      <details class="panel settingspanel"><summary>출결 일괄 삭제 · 날짜별 정리</summary>
+        <div class="settings">
+          <p class="help">자리배치와 학생 명단은 유지하고 출결 내역만 삭제합니다. 복구하려면 삭제 전 전체 백업이 필요합니다.</p>
+          <div class="field"><label for="bulkScope">삭제할 날짜 범위</label>
+            <select id="bulkScope"><option value="selected">현재 선택 날짜만</option><option value="range">기간 지정 · 과거부터 현재까지</option><option value="all">전체 날짜 출결</option></select>
+          </div>
+          <div id="bulkRange" class="bulk-range" hidden>
+            <div class="field"><label for="bulkFrom">시작일</label><input type="date" id="bulkFrom"></div>
+            <div class="field"><label for="bulkTo">종료일</label><input type="date" id="bulkTo"></div>
+          </div>
+          <label class="bulk-check"><input id="bulkIncludeClosed" type="checkbox"> 마감된 날짜도 일괄 삭제 대상에 포함</label>
+          <p class="help" id="bulkPreview" aria-live="polite"></p>
+          <div class="flex"><button type="button" id="bulkBackup" class="btn soft">삭제 전 전체 백업</button><button type="button" id="bulkDelete" class="btn danger">선택 범위 일괄 삭제</button></div>
+          <p class="notice">삭제 버튼을 누른 뒤에는 대상 날짜와 건수를 다시 확인하고 ‘삭제’를 직접 입력해야 실행됩니다. 출결 기록은 자동으로 외부에 백업되지 않습니다.</p>
+        </div>
+      </details>
+      <details class="panel settingspanel"><summary>데이터 백업 · 가져오기 · 개인정보 안내</summary><div class="settings">
+        <div class="flex"><button class="btn" id="backupBtn">전체 백업 JSON 저장</button><label class="btn filelabel">출결 백업 복원<input id="attendanceFile" type="file" accept=".json,application/json"></label></div>
+        <div class="notice">백업 파일에는 학생 이름과 출결 정보가 들어 있습니다. 개인용·학교 승인 저장소에만 보관하고, 메신저나 공개 클라우드에 게시하지 마세요.</div>
+        <p class="help" id="privacyMode">단독 실행 시에는 이 브라우저에만 저장됩니다. PC 서버로 열면 PC와 같은 사설 네트워크에서 동기화됩니다.</p>
+      </div></details>
+    </div>
+  </div>
+  <div class="footer">이 앱은 외부 광고·분석·클라우드 API를 사용하지 않습니다. 로컬 PC 서버로 연동할 때에는 PC 전원이 켜져 있고 두 기기가 같은 신뢰할 수 있는 네트워크에 연결되어 있어야 합니다. 로컬 HTTP 통신 자체는 암호화되지 않으므로 공용 Wi‑Fi나 공개 인터넷에 노출하지 마세요.</div>
+</div>
+<div class="overlay" id="loginOverlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle"><div class="dialog">
+  <div class="logo" style="margin-bottom:13px">出</div><h2 id="loginTitle">학급 출결 관리 연결</h2><p class="sm">학생 정보는 이 PC의 출결 서버에 저장되며 외부 클라우드로 전송되지 않습니다. PC 서버 실행 창에 표시된 접속 코드를 입력해 주세요.</p>
+  <div class="field"><label for="codeInput">접속 코드</label><input id="codeInput" type="password" autocomplete="off" placeholder="PC에 표시된 접속 코드"></div><div id="loginError" class="sm" style="color:var(--bad)"></div><div class="actions"><button class="btn primary" id="loginBtn">연결하기</button></div>
+  <p class="help">같은 기기에서는 접속 중에만 코드를 기억하며, 브라우저 탭을 닫으면 다시 입력할 수 있습니다.</p>
+</div></div>
+<div class="overlay" id="editOverlay" role="dialog" aria-modal="true" aria-labelledby="editTitle"><div class="dialog">
+  <button class="x" id="closeEdit" aria-label="닫기">×</button><h2 id="editTitle">출결 입력</h2><p class="date-label" id="editDate"></p>
+  <div class="eyebrow">빠른 입력 · 조회·1~6교시·종례</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
+  <div class="field"><label for="statusSelect">출결 유형</label><select id="statusSelect"><option value="unrecorded">미입력(기록 없음)</option><option value="present">출석</option><option value="absence">결석</option><option value="late">지각</option><option value="early">조퇴</option><option value="missed">결과(수업 불참)</option></select></div>
+  <div id="reasonFields"><div class="field"><label for="reasonSelect">출결 구분</label><select id="reasonSelect"><option value="illness">질병</option><option value="recognized">출석인정</option><option value="unexcused">미인정</option><option value="other">기타</option></select></div>
+  <div id="periodFields" class="field"><label id="periodTitle">미참여 교시 선택</label>
+    <p class="help" id="periodHint">출결 유형을 선택하세요.</p>
+    <div id="periodChips" class="period-chips" role="group" aria-labelledby="periodTitle"></div>
+    <p class="help" id="periodSummary" aria-live="polite"></p>
+    <input id="timeField" type="hidden">
+    <p id="legacyTimeNote" class="help" hidden></p>
+  </div>
+  <div id="detailReasonFields" class="field" hidden><label id="detailReasonTitle">세부 사유 빠른 선택</label>
+    <div class="detail-reason-chips" id="detailReasonChips" role="group" aria-labelledby="detailReasonTitle"></div>
+    <div class="field" id="customReasonWrap" hidden><label for="customReasonInput">기타 사유 직접 입력</label><input id="customReasonInput" type="text" maxlength="60" placeholder="간단한 사유를 입력하세요"></div>
+    <p class="help">선택한 사유는 앱의 보조 출결 기록에 저장됩니다. 출석인정 여부는 학교 규정과 증빙 확인 후 확정하세요.</p>
+  </div>
+  <div class="field"><label for="memoField">간단 메모 (선택, 최대 90자)</label><textarea id="memoField" maxlength="90" placeholder="불필요한 진단명 등 민감한 의료정보는 기재하지 마세요."></textarea></div></div>
+  <div class="actions"><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
+  <p class="help">교시 미참여 표시는 나이스 입력을 돕는 참고 기록입니다. 같은 날 복합 출결과 출석인정의 최종 처리는 학교 규정에 따라 확인해야 합니다.</p><p class="help" id="editUpdated"></p>
+</div></div>
+<div class="overlay" id="bulkConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="bulkConfirmTitle"><div class="dialog">
+    <h2 id="bulkConfirmTitle">출결 일괄 삭제 최종 확인</h2><p class="help" id="bulkConfirmSummary"></p>
+    <div class="field"><label for="bulkConfirmWord">삭제하려면 아래에 <b>삭제</b>라고 입력하세요.</label><input id="bulkConfirmWord" type="text" autocomplete="off" placeholder="삭제"></div>
+    <div class="actions"><button type="button" class="btn" id="bulkConfirmCancel">취소</button><button type="button" class="btn danger" id="bulkConfirmExecute" disabled>영구 삭제</button></div>
+  </div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+(function(){
+const $=id=>document.getElementById(id), EMPTY=()=>({v:2,version:0,layouts:[],attendance:{},history:[],recentIds:[]});
+const statuses={unrecorded:'미입력',present:'출석',absence:'결석',late:'지각',early:'조퇴',missed:'결과'};
+const reasons={illness:'질병',recognized:'출석인정',unexcused:'미인정',other:'기타'};
+const PERIODS=['조회','1교시','2교시','3교시','4교시','5교시','6교시','종례'];
+const DETAIL_CHOICES={recognized:['감염병','생리','교외체험학습'],illness:['감기','복통','두통','병원진료']};
+let editingPeriods=[],selectedDetailReason='',customDetailReason='';
+function normalizePeriods(value){const set=new Set(Array.isArray(value)?value:[]);return PERIODS.filter(p=>set.has(p));}
+function automaticPeriods(status,terminal){
+  if(status==='absence')return PERIODS.slice();
+  const idx=PERIODS.indexOf(terminal);
+  if(idx<0)return [];
+  if(status==='late')return PERIODS.slice(0,idx+1);
+  if(status==='early')return PERIODS.slice(idx);
+  if(status==='missed')return [terminal];
+  return [];
+}
+function getDetailChoiceKind(){
+  const s=$('statusSelect').value,r=$('reasonSelect').value;
+  if(s==='absence'&&r==='recognized')return 'recognized';
+  if((s==='absence'||s==='early')&&r==='illness')return 'illness';
+  return '';
+}
+function displaySelectedPeriods(status,periods){
+  if(status==='absence')return '조회부터 종례까지 전체 8개 시간 선택됨';
+  if(!periods.length)return '미참여 교시를 선택하세요. 교시를 직접 입력할 필요가 없습니다.';
+  if(status==='late')return '조회부터 '+periods[periods.length-1]+'까지 '+periods.length+'개 시간 선택됨';
+  if(status==='early')return periods[0]+'부터 종례까지 '+periods.length+'개 시간 선택됨';
+  return periods.join(' · ')+' ('+periods.length+'개 시간)';
+}
+function renderPeriodPicker(){
+  const status=$('statusSelect').value;
+  $('periodFields').hidden=status==='present'||status==='unrecorded';
+  if(status==='absence')editingPeriods=PERIODS.slice();
+  if(status==='present'||status==='unrecorded')editingPeriods=[];
+  const grid=$('periodChips');grid.replaceChildren();
+  const instruction={absence:'결석을 선택하면 조회·1~6교시·종례 전체를 자동 표시합니다.',late:'마지막으로 참여하지 못한 교시 하나만 누르세요. 조회부터 자동 선택됩니다.',early:'처음 참여하지 못한 교시 하나만 누르세요. 종례까지 자동 선택됩니다.',missed:'참여하지 못한 교시를 하나씩 선택하거나 해제하세요.'};
+  $('periodHint').textContent=instruction[status]||'';
+  for(const p of PERIODS){
+    let b=document.createElement('button');b.type='button';b.className='period-chip';b.textContent=p;
+    b.setAttribute('aria-pressed',String(editingPeriods.includes(p)));
+    b.disabled=status==='absence';
+    b.setAttribute('aria-label',p+(editingPeriods.includes(p)?' 선택됨':' 미선택'));
+    b.addEventListener('click',()=>{
+      if(status==='late'||status==='early')editingPeriods=automaticPeriods(status,p);
+      else if(status==='missed'){
+        const a=new Set(editingPeriods);if(a.has(p))a.delete(p);else a.add(p);editingPeriods=normalizePeriods([...a]);
+      }
+      renderPeriodPicker();
+    });
+    grid.append(b);
+  }
+  $('periodSummary').textContent=displaySelectedPeriods(status,editingPeriods);
+}
+function renderDetailReasonPicker(){
+  const kind=getDetailChoiceKind(),wrap=$('detailReasonFields'),area=$('detailReasonChips');
+  wrap.hidden=!kind;area.replaceChildren();if(!kind)return;
+  $('detailReasonTitle').textContent=kind==='recognized'?'출석인정 결석 세부 사유':'질병 '+statuses[$('statusSelect').value]+' 세부 사유';
+  const choices=DETAIL_CHOICES[kind];
+  if(selectedDetailReason&&selectedDetailReason!=='__custom__'&&!choices.includes(selectedDetailReason)){
+    customDetailReason=selectedDetailReason;selectedDetailReason='__custom__';
+  }
+  for(const choice of [...choices,'__custom__']){
+    const b=document.createElement('button');b.type='button';b.className='detail-reason-chip';
+    b.textContent=choice==='__custom__'?'기타 직접 입력':choice;
+    b.setAttribute('aria-pressed',String(selectedDetailReason===choice));
+    b.addEventListener('click',()=>{
+      selectedDetailReason=choice;renderDetailReasonPicker();
+      if(choice==='__custom__')$('customReasonInput').focus();
+    });area.append(b);
+  }
+  $('customReasonWrap').hidden=selectedDetailReason!=='__custom__';
+  if(selectedDetailReason==='__custom__')$('customReasonInput').value=customDetailReason;
+}
+function chosenDetailReason(){return getDetailChoiceKind()?(selectedDetailReason==='__custom__'?$('customReasonInput').value.trim().slice(0,60):selectedDetailReason):'';}
+function timeToPeriod(cell){
+  const old=String(cell?.time||'').trim();
+  const m=old.match(/^([1-6])\s*교시$/);
+  if(m)return m[1]+'교시';
+  return old==='조회'||old==='종례'?old:'';
+}
+function resetEditorForStatus(){
+  editingPeriods=[];selectedDetailReason='';customDetailReason='';
+  renderPeriodPicker();renderDetailReasonPicker();
+}
+
+const LOCAL_KEY='jb-attendance-local-v2',QUEUE_KEY='jb-attendance-queue-v2',SECRET_KEY='jb-attendance-session-key',DATE_SELECTION_KEY='jb-attendance-selected-date-session-v1';
+function isValidDay(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s)))return false;const d=new Date(s+'T12:00:00');return !Number.isNaN(d.getTime())&&dayString(d)===s;}
+function dayString(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function loadDatePreference(){try{const r=JSON.parse(sessionStorage.getItem(DATE_SELECTION_KEY)||'null');return r&&r.manual===true&&isValidDay(r.date)?{date:r.date,manual:true}:null;}catch(e){return null;}}
+const restoredDatePreference=loadDatePreference();
+function rememberSelectedDate(){try{if(autoToday)sessionStorage.removeItem(DATE_SELECTION_KEY);else sessionStorage.setItem(DATE_SELECTION_KEY,JSON.stringify({date:selectedDate,manual:true}));}catch(e){}}
+function isDateClosed(date,data=db){return !!(data.closedDates&&data.closedDates[date]);}
+function addAudit(data,event,date,records){data.history=Array.isArray(data.history)?data.history:[];data.history.push({type:event,date,records,at:new Date().toISOString()});if(data.history.length>1000)data.history=data.history.slice(-1000);}
+let db=readJson(LOCAL_KEY,EMPTY()),queue=readJson(QUEUE_KEY,[]),mode='local',secret='',syncing=false,editing=null,activeTab='today',autoToday=!restoredDatePreference;
+let selectedDate=restoredDatePreference?.date||today(),month=selectedDate.slice(0,7),lastToday=today(),toastTimeout;
+function readJson(key,fallback){try{const s=localStorage.getItem(key);return s?JSON.parse(s):fallback;}catch(e){return fallback;}}
+function persist(){try{localStorage.setItem(LOCAL_KEY,JSON.stringify(db));localStorage.setItem(QUEUE_KEY,JSON.stringify(queue));}catch(e){toast('저장 공간이 부족하거나 차단되어 있습니다. 백업하세요.');}}
+function today(){return dayString(new Date());}
+function shiftDate(s,days){const [y,m,d]=s.split('-').map(Number),v=new Date(y,m-1,d+days);return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;}
+function newId(){return (self.crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,''):'op_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);}
+function toast(s){const e=$('toast');e.textContent=s;e.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>e.classList.remove('show'),3600);}
+function getLayout(date=selectedDate){const ls=db.layouts||[];if(!ls.length)return null;let result=ls[0];for(const l of ls){if(l.effectiveFrom<=date)result=l;}return result;}
+function getCell(date,n){return (db.attendance[date]||{})[String(n)]||null;}
+function statusName(cell){if(!cell||cell.status==='unrecorded')return '미입력';if(cell.status==='present')return '출석';return `${reasons[cell.reason]||''} ${statuses[cell.status]||''}`.trim();}
+function useCellClass(cell){if(!cell)return 'unrecorded';return cell.reason==='recognized'?'recognized':cell.status;}
+function cleanCell(cell){let status=statuses[cell.status]?cell.status:'unrecorded',real=status!=='unrecorded'&&status!=='present';const reason=real?(reasons[cell.reason]?cell.reason:'illness'):'';let periods=real?normalizePeriods(cell.periods):[];if(status==='absence')periods=PERIODS.slice();return {status,reason,memo:real?String(cell.memo||'').slice(0,90):'',time:real?String(cell.time||'').slice(0,10):'',periods,detailReason:real&&((status==='absence'&&reason==='recognized')||((status==='absence'||status==='early')&&reason==='illness'))?String(cell.detailReason||'').slice(0,60):''};}
+function applyLocal(op){
+  if(!db.attendance||typeof db.attendance!=='object')db.attendance={};
+  if(op.type==='layout'){db.layouts=db.layouts||[];db.layouts.push(op.layout);db.layouts.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom)||String(a.importedAt||'').localeCompare(String(b.importedAt||'')));}
+  if(op.type==='set'){
+    if(isDateClosed(op.date))return false;
+    const a=db.attendance[op.date]||(db.attendance[op.date]={});
+    if(op.cell.status==='unrecorded')delete a[op.student];
+    else a[op.student]={...cleanCell(op.cell),rev:op.baseRev||0,updatedAt:new Date().toISOString()};
+    if(!Object.keys(a).length)delete db.attendance[op.date];
+  }
+  if(op.type==='markRemaining'){
+    if(isDateClosed(op.date))return false;
+    const a=db.attendance[op.date]||(db.attendance[op.date]={});
+    op.students.forEach(n=>{if(!a[n])a[n]={status:'present',reason:'',memo:'',time:'',periods:[],detailReason:'',rev:0,updatedAt:new Date().toISOString()};});
+  }
+  if(op.type==='finalize'){
+    db.closedDates=db.closedDates||{};if(isDateClosed(op.date))return false;
+    db.closedDates[op.date]={closedAt:new Date().toISOString(),count:Object.keys(db.attendance[op.date]||{}).length};
+    addAudit(db,'finalize',op.date,db.closedDates[op.date].count);
+  }
+  if(op.type==='reopen'){
+    if(!isDateClosed(op.date))return false;
+    delete db.closedDates[op.date];addAudit(db,'reopen',op.date,0);
+  }
+  if(op.type==='bulkDelete'){
+    db.closedDates=db.closedDates||{};
+    let removed=0;
+    for(const date of op.dates||[]){
+      if(!isValidDay(date)||isDateClosed(date)&&!op.includeClosed)continue;
+      removed+=Object.keys(db.attendance[date]||{}).length;
+      delete db.attendance[date];
+      if(op.includeClosed)delete db.closedDates[date];
+    }
+    addAudit(db,'bulkDelete',(op.dates||[]).join(','),removed);
+  }
+  if(op.type==='restore')db=op.data;
+  return true;
+}
+function setStatus(message,good){$('connectionText').textContent=message;$('statusDot').className='dot '+(good?'ok':'warn');}
+function updateStatus(){if(mode==='local'){setStatus('이 기기만 저장',true);return;}setStatus(!secret?'접속 코드 필요':queue.length?'미동기화 '+queue.length+'건':syncing?'동기화 중':'PC와 동기화됨',!!secret&&!queue.length);}
+async function api(path,method='GET',body){const r=await fetch(path,{method,headers:{'X-Access-Key':secret,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});const json=await r.json().catch(()=>({error:'응답을 읽지 못했습니다.'}));if(!r.ok){const e=new Error(json.error||'통신 오류');e.status=r.status;e.current=json.current;throw e;}return json;}
+async function pull(){if(mode!=='lan'||!secret)return;try{const r=await api('/api/state');db=r.data;for(const op of queue)applyLocal(op);persist();render();updateStatus();}catch(e){if(e.status===401){secret='';showLogin();}else setStatus('네트워크 확인 필요',false);}}
+async function flush(){if(syncing||mode!=='lan'||!secret)return;syncing=true;updateStatus();try{
+ while(queue.length){const op=queue[0];try{const saved=await api('/api/ops','POST',op);queue.shift();if(op.type==='set')queue.forEach(x=>{if(x.type==='set'&&x.date===op.date&&x.student===op.student&&x.baseRev===op.baseRev)x.baseRev=saved.version;});persist();}
+ catch(e){if(e.status===409){const old=e.current?statusName(e.current):'미입력';const mine=statusName(op.cell);const keep=window.confirm(`${op.date} ${op.student}번의 출결이 다른 기기에서 수정되었습니다.\n\nPC 최신 기록: ${old}\n현재 입력: ${mine}\n\n[확인] 내 입력으로 덮어쓰기 / [취소] PC 최신 기록 유지`);
+ if(keep){op.force=true;persist();continue;}queue.shift();persist();continue;}
+ if(e.status===401){secret='';showLogin();break;}throw e;}}
+ }catch(e){setStatus('연결 대기 · 이 기기에 임시 저장',false);}finally{syncing=false;persist();if(mode==='lan'&&secret)await pull();updateStatus();}}
+function doOp(op){op.id=newId();
+ if(['finalize','reopen','bulkDelete'].includes(op.type)&&mode==='lan'){toast('저장 마감·일괄 삭제는 휴대폰 단독 저장 모드에서만 지원합니다.');return false;}
+ if(mode==='lan'&&!secret){toast('PC 서버 접속 코드를 먼저 입력하세요.');return false;}
+ if(['set','markRemaining'].includes(op.type)&&isDateClosed(op.date)){toast(op.date+'은 마감된 날짜입니다. 마감을 해제하세요.');return false;}
+ if(op.type==='set'&&!syncing)queue=queue.filter(x=>!(x.type==='set'&&x.date===op.date&&x.student===op.student));
+ if(applyLocal(op)===false){toast('이미 처리된 작업이거나 마감된 날짜입니다.');return false;}
+ if(mode==='lan'){queue.push(op);persist();render();flush();}else{persist();render();updateStatus();}
+ return true;
+}
+function render(){const layout=getLayout();$('dateInput').value=selectedDate;$('monthInput').value=month;$('effectiveInput').value=$('effectiveInput').value||selectedDate;
+ const dt=new Date(selectedDate+'T12:00:00');$('dayName').textContent=`${['일','월','화','수','목','금','토'][dt.getDay()]}요일 · ${selectedDate===today()?'오늘 날짜 자동 적용':'지난날·선택 날짜 수정 가능'}`;
+ $('classSubtitle').textContent=layout?`${layout.className||'학급'} · ${layout.count}명 · ${layout.cols}분단`:'확정 자리배치를 가져와 시작하세요';
+ $('layoutCount').textContent=(db.layouts||[]).length?`${db.layouts.length}개 시기 등록`:'등록 안 됨';
+ const finalized=db.closedDates?.[selectedDate],recordCount=Object.keys(db.attendance?.[selectedDate]||{}).length;
+ $('markAll').disabled=!layout||!!finalized;
+ $('finalizeDate').hidden=!!finalized;
+ $('finalizeDate').disabled=!layout||mode==='lan';
+ $('reopenDate').hidden=!finalized;
+ $('reopenDate').disabled=mode==='lan';
+ const work=$('dateWorkStatus');
+ work.classList.toggle('closed',!!finalized);
+ work.textContent=selectedDate+' · '+(finalized?'저장 마감 완료 ('+new Date(finalized.closedAt).toLocaleString('ko-KR')+') · 수정 잠김':'입력·수정 가능')+' · 저장된 출결 '+recordCount+'건';
+ renderStats(layout);renderBoard(layout);renderList(layout);renderTodaySummary(layout);
+ if(activeTab==='month')renderMonthly();
+ if(activeTab==='records')renderRecordStats();
+ renderBulkPreview();
+}
+function renderStats(l){const s={present:0,unrecorded:0,absence:0,late:0,early:0,missed:0,recognized:0};
+ if(l)for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n),key=c?.reason==='recognized'&&!['unrecorded','present'].includes(c.status)?'recognized':c&&statuses[c.status]?c.status:'unrecorded';s[key]++;}
+ $('stats').innerHTML=[['출석',s.present,'good'],['출석인정',s.recognized,'good'],['미입력',s.unrecorded,''],['결석',s.absence,'danger'],['지각',s.late,''],['조퇴',s.early,''],['결과',s.missed,'']].map(([name,n,cl])=>`<div class="stat ${cl}"><div class="n">${n}</div><div class="lab">${name}</div></div>`).join('');}
+function renderBoard(l){const grid=$('seatGrid');grid.replaceChildren();if(!l){grid.innerHTML='<div class="emptymsg" style="grid-column:1/-1">아직 자리배치가 없습니다.<br>오른쪽의 <b>자리교체 백업 가져오기</b>로 시작해 주세요.</div>';$('layoutCaption').textContent='확정된 배치를 가져온 뒤 사용할 수 있습니다.';$('layoutNotice').textContent='';return;}
+ const rows=Math.ceil(l.count/l.cols),paired=new Set(l.pairs||[]);grid.style.gridTemplateColumns=`repeat(${l.cols},minmax(0,1fr))`;
+ const mw=Math.max(0,l.cols*58);$('board').style.setProperty('--boardMin',`max(100%, ${mw}px)`);
+ for(let dr=0;dr<rows;dr++)for(let dc=0;dc<l.cols;dc++){
+   const realIdx=(rows-1-dr)*l.cols+(l.cols-1-dc),n=l.seats[realIdx];const el=document.createElement('button');el.type='button';el.className='seat';
+   if(n===null){el.classList.add('empty');el.disabled=true;el.textContent='빈자리';}
+   else{const c=getCell(selectedDate,n);el.classList.add(useCellClass(c));if(paired.has(realIdx))el.classList.add('join-l');if(paired.has(realIdx-1))el.classList.add('join-r');
+     const no=document.createElement('div');no.className='no';no.textContent=n+'번';const name=document.createElement('div');name.className='name';name.textContent=l.names[n-1]||'이름 없음';
+     const tag=document.createElement('div');tag.className='tag';tag.textContent=statusName(c);if(c?.reason==='recognized')tag.classList.add('recog');el.append(no,name,tag);
+     el.setAttribute('aria-label',`${n}번 ${l.names[n-1]||''}, ${statusName(c)}. 출결 편집`);el.addEventListener('click',()=>openEditor(n));}
+   grid.appendChild(el);
+ }
+ $('layoutCaption').textContent=`${l.effectiveFrom}부터 적용 · 앞뒤와 좌우를 교탁 방향으로 반전`;
+ $('layoutNotice').textContent=l.effectiveFrom>selectedDate?'※ 이 날짜보다 이전에 등록된 자리배치가 없어 가장 오래된 배치를 표시합니다. 필요한 경우 과거 배치를 별도 등록하세요.':'';
+}
+function renderList(l){const target=$('dailyList');target.replaceChildren();if(!l){target.innerHTML='<div class="emptymsg">자리배치를 가져오면 학생 명렬이 나타납니다.</div>';return;}
+ for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n),b=document.createElement('button');b.type='button';b.className='studentrow';
+   const num=document.createElement('span');num.className='bubble';num.textContent=n;
+   const name=document.createElement('span');name.className='student-name';name.textContent=l.names[n-1]||`${n}번 학생`;
+   const pill=document.createElement('span');pill.className='pill '+useCellClass(c);pill.textContent=statusName(c);pill.title=displaySelectedPeriods(c?.status||'unrecorded',c?.status==='absence'?PERIODS:normalizePeriods(c?.periods));b.append(num,name,pill);b.addEventListener('click',()=>openEditor(n));target.appendChild(b);}}
+function renderTodaySummary(l){const box=$('eventSummary');if(!l){box.innerHTML='<p class="sm">자리배치가 준비되면 선택일의 출결 요약이 표시됩니다.</p>';return;}
+ const entries=[];for(let n=1;n<=l.count;n++){const c=getCell(selectedDate,n);if(c&&c.status!=='present')entries.push({n,c});}
+ let p=document.createElement('p');p.className='sm';p.textContent='미입력은 출석으로 자동 간주하지 않습니다. 출석 확인 후 “미입력 학생 출석 처리”를 누르세요.';box.replaceChildren(p);
+ if(!entries.length){const d=document.createElement('p');d.className='sm';d.textContent='입력된 결석·지각·조퇴·결과가 없습니다.';box.appendChild(d);return;}
+ entries.forEach(({n,c})=>{const b=document.createElement('button');b.type='button';b.className='studentrow';b.innerHTML='<span class="bubble"></span><span class="student-name"></span><span class="pill"></span>';b.children[0].textContent=n;b.children[1].textContent=l.names[n-1]||`${n}번 학생`;b.children[2].textContent=statusName(c);b.children[2].className='pill '+useCellClass(c);b.addEventListener('click',()=>openEditor(n));box.appendChild(b);});}
+function renderMonthly(){const l=getLayout(month+'-15');const t=$('monthTable');if(!l){t.textContent='자리배치를 먼저 가져오세요.';return;}
+ let head='<table><thead><tr><th>학생</th><th>결석</th><th>지각</th><th>조퇴</th><th>결과</th><th>출석인정</th></tr></thead><tbody>';
+ for(let n=1;n<=l.count;n++){let counts={absence:0,late:0,early:0,missed:0,recognized:0};for(const [date,items] of Object.entries(db.attendance||{})){if(!date.startsWith(month+'-'))continue;const c=items[n];if(!c)continue;if(c.reason==='recognized')counts.recognized++;else if(counts[c.status]!==undefined)counts[c.status]++;}
+ head+=`<tr><td>${escapeHtml(n+'번 '+(l.names[n-1]||''))}</td><td>${counts.absence}</td><td>${counts.late}</td><td>${counts.early}</td><td>${counts.missed}</td><td>${counts.recognized}</td></tr>`;}
+ t.innerHTML=head+'</tbody></table>';
+}
+
+/* 학생별/날짜별 통계용 행 모델. 정렬 기준은 선택한 날짜와 무관하며 과거부터 표시한다. */
+function historyRows(data,filterMonth,resolveLayout){
+ const rows=[];
+ for(const date of Object.keys(data.attendance||{}).filter(isValidDay).sort()){
+  if(filterMonth&&!date.startsWith(filterMonth+'-'))continue;
+  const items=data.attendance[date]||{},layout=resolveLayout(date);
+  for(const n of Object.keys(items).map(Number).filter(x=>Number.isSafeInteger(x)&&x>=1&&x<=40).sort((a,b)=>a-b)){
+   const c=items[n];
+   if(!c||!statuses[c.status]||c.status==='unrecorded')continue;
+   rows.push({date,n,name:String(layout?.names?.[n-1]||'').slice(0,30),status:c.status,reason:c.reason||'',detailReason:c.detailReason||'',periods:c.status==='absence'?PERIODS.slice():normalizePeriods(c.periods),memo:c.memo||''});
+  }
+ }
+ return rows;
+}
+function sortHistoryRows(rows,view){
+ const result=rows.slice();
+ if(view==='student')result.sort((a,b)=>a.n-b.n||a.date.localeCompare(b.date));
+ else result.sort((a,b)=>a.date.localeCompare(b.date)||a.n-b.n);
+ return result;
+}
+function switchTab(name){
+ activeTab=name;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ $('todayPane').hidden=name!=='today';$('monthPane').hidden=name!=='month';$('recordsPane').hidden=name!=='records';
+ if(name==='month')renderMonthly();
+ if(name==='records')renderRecordStats();
+}
+function renderRecordStats(){
+ const scope=$('recordScopeSelect').value,filterMonth=scope==='month'?$('recordMonthInput').value:'';
+ const mode=$('recordViewSelect').value;
+ const rows=sortHistoryRows(historyRows(db,filterMonth,date=>getLayout(date)),mode);
+ const countDates=new Set(rows.map(r=>r.date)).size,countStudents=new Set(rows.map(r=>r.n)).size;
+ $('recordStats').textContent='표시 순서: '+(mode==='student'?'학생 번호 오름차순 → 학생별 날짜 과거순':'날짜 과거순 → 날짜별 학생 번호 오름차순')+' · '+rows.length+'건 · '+countStudents+'명 · '+countDates+'일';
+ const container=$('recordTable');container.replaceChildren();
+ if(!rows.length){let empty=document.createElement('p');empty.className='emptymsg';empty.textContent='해당 조건에 저장된 출결 기록이 없습니다.';container.append(empty);return;}
+ const groups=new Map();
+ for(const r of rows){const key=mode==='student'?String(r.n):r.date;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
+ for(const [key,entries] of groups){
+  const section=document.createElement('section');section.className='record-group';
+  const header=document.createElement('h3');
+  header.textContent=(mode==='student'?key+'번 '+(entries[0].name||'학생')+' · 날짜 과거순':key+' · 학생 번호순')+' · '+entries.length+'건';
+  section.append(header);
+  for(const row of entries){
+   const item=document.createElement('button');item.type='button';item.className='record-row';
+   const p=document.createElement('span');p.className='record-primary';p.textContent=mode==='student'?row.date:row.n+'번 '+(row.name||'학생');
+   const status=document.createElement('span');status.textContent=statusName(row);
+   const detail=document.createElement('span');detail.className='record-detail';
+   const bits=[row.detailReason,...(row.periods.length?[row.periods.join('·')]:[]),...(row.memo?[row.memo]:[])].filter(Boolean);
+   detail.textContent=bits.length?bits.join(' / '):'교시·세부 사유 없음';
+   item.append(p,status,detail);
+   item.addEventListener('click',()=>{changeDate(row.date,true);switchTab('today');if(!isDateClosed(row.date))openEditor(row.n);else toast(row.date+'은 저장 마감 상태입니다. 마감을 해제해야 수정할 수 있습니다.');});
+   section.append(item);
+  }
+  container.append(section);
+ }
+}
+/* 날짜 범위를 미리 계산해 지우는 날짜와 레코드 수를 삭제 전에 정확히 보여준다. */
+function planBulkDelete(data,scope,selected,from,to,includeClosed){
+ if(scope==='range'&&(!isValidDay(from)||!isValidDay(to)||from>to))return {dates:[],records:0,closedExcluded:0,error:'시작일과 종료일을 올바르게 입력하세요.'};
+ const all=new Set([...Object.keys(data.attendance||{}),...Object.keys(data.closedDates||{})].filter(isValidDay));
+ const matching=[...all].sort().filter(date=>scope==='all'||scope==='selected'&&date===selected||scope==='range'&&date>=from&&date<=to);
+ const closedExcluded=matching.filter(date=>isDateClosed(date,data)&&!includeClosed).length;
+ const dates=matching.filter(date=>includeClosed||!isDateClosed(date,data));
+ const records=dates.reduce((sum,d)=>sum+Object.keys(data.attendance?.[d]||{}).length,0);
+ return {dates,records,closedExcluded,error:''};
+}
+function currentBulkPlan(){
+ return planBulkDelete(db,$('bulkScope').value,syncDateFromControl(),$('bulkFrom').value,$('bulkTo').value,$('bulkIncludeClosed').checked);
+}
+function renderBulkPreview(){
+ $('bulkRange').hidden=$('bulkScope').value!=='range';
+ if(!$('bulkFrom').value)$('bulkFrom').value=selectedDate;
+ if(!$('bulkTo').value)$('bulkTo').value=selectedDate;
+ const plan=currentBulkPlan();
+ $('bulkPreview').textContent=plan.error||('삭제 대상: '+plan.dates.length+'일 · 출결 '+plan.records+'건'+(plan.closedExcluded?' · 마감되어 제외된 날짜 '+plan.closedExcluded+'일':'')+'. 자리배치는 유지됩니다.');
+ $('bulkDelete').disabled=!!plan.error||!plan.dates.length||mode==='lan';
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function openEditor(n){syncDateFromControl();if(mode==='lan'&&!secret){showLogin();return;}if(isDateClosed(selectedDate)){toast(selectedDate+' 출결은 마감되었습니다. 마감 해제 후 수정할 수 있습니다.');return;}const l=getLayout();if(!l)return;const cell=getCell(selectedDate,n);editing={date:selectedDate,n,baseRev:cell?.rev||0};$('editTitle').textContent=`${n}번 ${l.names[n-1]||'학생'}`;$('editDate').textContent=selectedDate+' 출결 입력 · 이전 날짜도 수정할 수 있습니다.';
+ $('statusSelect').value=cell?.status||'unrecorded';$('reasonSelect').value=cell?.reason||'illness';$('timeField').value=cell?.time||'';$('memoField').value=cell?.memo||'';
+ editingPeriods=normalizePeriods(cell?.periods);
+ if(!editingPeriods.length&&cell?.status==='late'||!editingPeriods.length&&cell?.status==='early'||!editingPeriods.length&&cell?.status==='missed'){
+   const p=timeToPeriod(cell);if(p)editingPeriods=automaticPeriods(cell.status,p);
+ }
+ selectedDetailReason=String(cell?.detailReason||'').slice(0,60);customDetailReason='';
+ $('legacyTimeNote').hidden=!cell?.time;
+ $('legacyTimeNote').textContent=cell?.time?'이전 버전에서 입력한 시각·교시: '+cell.time+' (보존됩니다)':'';
+
+ $('editUpdated').textContent=cell?.updatedAt?`최근 저장: ${new Date(cell.updatedAt).toLocaleString('ko-KR')}`:'이 날짜의 입력 기록이 없습니다.';toggleReason();$('editOverlay').classList.add('open');$('statusSelect').focus();}
+function closeEditor(){$('editOverlay').classList.remove('open');editing=null;}
+function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includes($('statusSelect').value);renderPeriodPicker();renderDetailReasonPicker();}
+function changeDate(s,manual){if(!isValidDay(s))return false;
+ selectedDate=s;autoToday=!!manual?false:autoToday;month=s.slice(0,7);rememberSelectedDate();
+ render();return true;
+}
+function syncDateFromControl(){
+ const chosen=$('dateInput').value;
+ if(isValidDay(chosen)&&chosen!==selectedDate)changeDate(chosen,true);
+ return selectedDate;
+}
+function download(filename,content,mime){if(window.AndroidApp&&AndroidApp.saveTextFile){AndroidApp.saveTextFile(filename,mime||'application/json',String(content));return;}const blob=new Blob([content],{type:mime||'application/json;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
+function csvCell(x){let s=String(x??'');if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+function exportCsv(){const l=getLayout();if(!l){toast('자리배치를 먼저 가져오세요.');return;}
+ const rows=[['날짜','학급','번호','이름','출결 유형','출결 구분','세부 사유',...PERIODS,'이전 시각/교시','메모']];
+ for(let n=1;n<=l.count;n++){
+   const c=getCell(selectedDate,n),selected=c?.status==='absence'?PERIODS:normalizePeriods(c?.periods);
+   rows.push([selectedDate,l.className,n,l.names[n-1]||'',c?statuses[c.status]:'미입력',c?reasons[c.reason]||'':'',c?.detailReason||'',...PERIODS.map(p=>selected.includes(p)?'/':''),c?.time||'',c?.memo||'']);
+ }
+ download(`학급출결_교시별_${selectedDate}.csv`,'\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast('교시별 CSV 파일을 기기에 저장했습니다.');
+}
+function interpretSeat(obj){const raw=obj?.app==='jb-seat-swap'?obj.state:(obj?.state?.seats?obj.state:obj);
+ if(!raw||!Number.isInteger(raw.count)||!Number.isInteger(raw.cols)||!Array.isArray(raw.seats))throw Error('학급 자리교체 앱의 백업 파일이 아닙니다.');
+ const records=Array.isArray(raw.records)?raw.records:[];
+ let rec=null;
+ if(raw.locked===true)rec={count:raw.count,cols:raw.cols,seats:raw.seats,pairs:raw.pairs};
+ else rec=records.find(r=>r.id===raw.lockRecordId)||records.find(r=>/확정/.test(r.title||''));
+ if(!rec)throw Error('확정된 배치를 찾지 못했습니다. 자리교체 앱에서 “배치 확정” 후 백업해 주세요.');
+ const count=rec.count,cols=rec.cols,total=Math.ceil(count/cols)*cols,seen=new Set();
+ if(!Number.isInteger(count)||count<1||count>40||!Number.isInteger(cols)||cols<1||cols>10||!Array.isArray(rec.seats)||rec.seats.length!==total)throw Error('인원·분단·좌석 정보가 올바르지 않습니다.');
+ for(const x of rec.seats){if(x===null)continue;if(!Number.isInteger(x)||x<1||x>count||seen.has(x))throw Error('자리 번호 중복 또는 누락이 있습니다.');seen.add(x);}if(seen.size!==count)throw Error('학생 번호가 누락되었습니다.');
+ return {effectiveFrom:$('effectiveInput').value||selectedDate,importedAt:new Date().toISOString(),className:String(raw.className||'').slice(0,40),count,cols,seats:rec.seats.slice(),names:Array.from({length:count},(_,i)=>String(raw.names?.[i]||'').slice(0,25)),pairs:Array.isArray(rec.pairs)?rec.pairs.filter(v=>Number.isInteger(v)&&v>=0&&v+1<total&&v%cols!==cols-1):[]};
+}
+function importSeat(o){try{const l=interpretSeat(o);if(!confirm(`${l.className||'학급'} ${l.count}명\n시작 날짜: ${l.effectiveFrom}\n확정 자리배치를 새로 등록할까요?\n기존 출결 기록은 보존됩니다.`))return;doOp({type:'layout',layout:l});toast('확정 자리배치를 가져왔습니다.');}catch(e){alert(e.message);}}
+function readJsonFile(input,callback){const file=input.files?.[0];input.value='';if(!file)return;if(file.size>3_000_000){alert('3MB보다 큰 파일은 가져올 수 없습니다.');return;}const reader=new FileReader();reader.onload=()=>{try{callback(JSON.parse(reader.result));}catch(e){alert('파일 형식을 확인해 주세요: '+e.message);}};reader.readAsText(file,'utf-8');}
+function backup(){download(`학급출결_전체백업_${today()}.json`,JSON.stringify({app:'jb-attendance',v:2,exportedAt:new Date().toISOString(),data:db},null,2));toast('전체 백업을 저장했습니다.');}
+function restore(o){try{if(o?.app!=='jb-attendance'||!o.data||!Array.isArray(o.data.layouts)||!o.data.attendance)throw Error('이 앱의 전체 백업 파일이 아닙니다.');if(!confirm('현재 모든 출결과 자리배치를 백업 내용으로 바꿉니다. 현재 데이터는 먼저 별도 백업해 두셨나요?'))return;doOp({type:'restore',data:o.data});toast('전체 백업을 복원했습니다.');}catch(e){alert(e.message);}}
+async function tryConnection(){
+ if(window.AndroidApp){mode='local';$('privacyMode').textContent='학급관리 APK: 기록은 이 휴대폰 내부에만 저장됩니다. JSON 백업을 안전하게 보관하세요.';updateStatus();return;}
+ if(location.protocol==='file:'){mode='local';$('privacyMode').textContent='단독 파일 모드: 이 브라우저에만 저장됩니다. 다른 기기와 자동 동기화하려면 제공된 PC 서버를 실행하고 같은 Wi‑Fi에서 접속하세요.';updateStatus();return;}
+ try{const res=await fetch('/api/health',{cache:'no-store'});const j=await res.json();if(j.app!=='jb-attendance')throw Error('다른 서버');mode='lan';$('privacyMode').textContent='로컬 PC 연동 모드: 학생 정보는 이 PC의 data/attendance.json에 저장됩니다. 서버와 같은 사설 네트워크에서만 동기화하고 외부 클라우드로 전송하지 않습니다.';
+  secret=sessionStorage.getItem(SECRET_KEY)||'';if(!secret){showLogin();return;}try{await api('/api/state');await pull();await flush();}catch(e){secret='';showLogin();}}
+ catch(e){mode='local';updateStatus();}
+}
+function showLogin(){$('loginOverlay').classList.add('open');$('mainApp').classList.add('locked-main');$('loginError').textContent='';updateStatus();}
+function hideLogin(){$('loginOverlay').classList.remove('open');$('mainApp').classList.remove('locked-main');}
+$('loginBtn').addEventListener('click',async()=>{secret=$('codeInput').value.trim();if(!secret)return;try{await api('/api/state');sessionStorage.setItem(SECRET_KEY,secret);$('codeInput').value='';hideLogin();await pull();await flush();toast('PC 서버와 연결되었습니다.');}catch(e){secret='';$('loginError').textContent='접속 코드를 확인해 주세요.';}});
+$('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click();});
+$('dateInput').addEventListener('input',e=>{if(isValidDay(e.target.value))changeDate(e.target.value,true);});
+$('dateInput').addEventListener('change',e=>changeDate(e.target.value,true));
+$('prevDay').addEventListener('click',()=>{syncDateFromControl();changeDate(shiftDate(selectedDate,-1),true);});
+$('nextDay').addEventListener('click',()=>{syncDateFromControl();changeDate(shiftDate(selectedDate,1),true);});
+$('todayBtn').addEventListener('click',()=>{autoToday=true;changeDate(today(),false);});
+$('finalizeDate').addEventListener('click',()=>{
+ const date=syncDateFromControl(),l=getLayout(date);
+ if(!l){toast('자리배치를 먼저 가져오세요.');return;}
+ if(isDateClosed(date)){toast('이미 마감되었습니다.');return;}
+ const recorded=Object.keys(db.attendance?.[date]||{}).length,remaining=Math.max(0,l.count-recorded);
+ if(!confirm(date+' 출결을 저장 마감할까요?\n저장된 출결 '+recorded+'명 · 미입력 '+remaining+'명\n마감 후에는 해제하기 전까지 해당 날짜를 수정할 수 없습니다.'))return;
+ if(doOp({type:'finalize',date}))toast(date+' 저장 마감이 완료되었습니다.');
+});
+$('reopenDate').addEventListener('click',()=>{
+ const date=syncDateFromControl();
+ if(!isDateClosed(date))return;
+ if(!confirm(date+'의 마감을 해제하고 출결을 다시 수정할까요?'))return;
+ if(doOp({type:'reopen',date}))toast(date+' 마감이 해제되었습니다.');
+});
+$('statusSelect').addEventListener('change',()=>{resetEditorForStatus();toggleReason();});
+$('reasonSelect').addEventListener('change',()=>{selectedDetailReason='';customDetailReason='';renderDetailReasonPicker();});
+$('customReasonInput').addEventListener('input',e=>{customDetailReason=e.target.value.slice(0,60);});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const [s,r]=b.dataset.preset.split(',');$('statusSelect').value=s;$('reasonSelect').value=r;resetEditorForStatus();toggleReason();}));
+$('closeEdit').addEventListener('click',closeEditor);$('cancelEdit').addEventListener('click',closeEditor);
+$('editOverlay').addEventListener('click',e=>{if(e.target===$('editOverlay'))closeEditor();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditor();});
+$('saveEdit').addEventListener('click',()=>{
+ if(!editing)return;
+ const status=$('statusSelect').value;
+ if(['late','early','missed'].includes(status)&&!editingPeriods.length){
+   toast('빠진 교시를 선택해 주세요.');$('periodChips').querySelector('button')?.focus();return;
+ }
+ if(status==='absence')editingPeriods=PERIODS.slice();
+ const {date,n,baseRev:editingBaseRev}=editing;
+ const cell=cleanCell({status,reason:$('reasonSelect').value,memo:$('memoField').value,time:$('timeField').value,periods:editingPeriods,detailReason:chosenDetailReason()});
+ closeEditor();if(doOp({type:'set',date,student:n,baseRev:editingBaseRev,cell}))toast(`${date} · ${n}번 ${statusName(cell)} · ${cell.periods.length}개 시간 저장`);
+});
+$('markAll').addEventListener('click',()=>{
+ const date=syncDateFromControl();if(isDateClosed(date)){toast('마감된 날짜는 출석을 일괄 입력할 수 없습니다.');return;}
+ const l=getLayout(date);if(!l)return;
+ const list=[];for(let n=1;n<=l.count;n++)if(!getCell(date,n))list.push(n);
+ if(!list.length){toast('미입력 학생이 없습니다.');return;}
+ if(!confirm(`${date} 미입력 학생 ${list.length}명을 출석 처리할까요?\n이미 결석·지각·조퇴 등이 입력된 학생은 변경되지 않습니다.`))return;
+ if(doOp({type:'markRemaining',date,students:list}))toast(date+' · '+list.length+'명의 출석을 기록했습니다.');
+});
+$('csvBtn').addEventListener('click',()=>{syncDateFromControl();exportCsv();});
+$('seatFile').addEventListener('change',e=>readJsonFile(e.target,importSeat));$('sameBrowser').addEventListener('click',()=>{try{const s=localStorage.getItem('jb-seat-swap-v1');if(!s)throw Error('같은 저장 영역에서 자리배치를 찾지 못했습니다. 기존 앱에서 백업 파일을 내려받아 가져오세요.');importSeat(JSON.parse(s));}catch(e){alert(e.message);}});
+$('backupBtn').addEventListener('click',backup);$('attendanceFile').addEventListener('change',e=>readJsonFile(e.target,restore));
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+$('monthInput').addEventListener('change',e=>{month=e.target.value;if(activeTab==='month')renderMonthly();});
+$('recordViewSelect').addEventListener('change',renderRecordStats);
+$('recordScopeSelect').addEventListener('change',()=>{
+ $('recordMonthWrap').hidden=$('recordScopeSelect').value!=='month';renderRecordStats();
+});
+$('recordMonthInput').addEventListener('change',renderRecordStats);
+['bulkScope','bulkFrom','bulkTo','bulkIncludeClosed'].forEach(id=>$(id).addEventListener('change',renderBulkPreview));
+$('bulkBackup').addEventListener('click',backup);
+let pendingBulkPlan=null;
+$('bulkDelete').addEventListener('click',()=>{
+ const plan=currentBulkPlan();
+ if(plan.error){toast(plan.error);return;}
+ if(!plan.dates.length){toast('삭제할 출결이 없습니다.');return;}
+ if(mode==='lan'){toast('일괄 삭제는 휴대폰 단독 저장 모드에서만 사용할 수 있습니다.');return;}
+ pendingBulkPlan={...plan,includeClosed:$('bulkIncludeClosed').checked};
+ $('bulkConfirmSummary').textContent='삭제 범위: '+plan.dates[0]+' ~ '+plan.dates[plan.dates.length-1]+' · '+plan.dates.length+'일 · '+plan.records+'건'+(pendingBulkPlan.includeClosed?' · 마감된 날짜 포함':'')+'\n삭제한 출결은 앱에서 되돌릴 수 없습니다. 먼저 전체 백업을 저장하세요.';
+ $('bulkConfirmWord').value='';$('bulkConfirmExecute').disabled=true;
+ $('bulkConfirmOverlay').classList.add('open');$('bulkConfirmWord').focus();
+});
+$('bulkConfirmWord').addEventListener('input',e=>{$('bulkConfirmExecute').disabled=e.target.value.trim()!=='삭제';});
+function closeBulkDialog(){$('bulkConfirmOverlay').classList.remove('open');pendingBulkPlan=null;}
+$('bulkConfirmCancel').addEventListener('click',closeBulkDialog);
+$('bulkConfirmOverlay').addEventListener('click',e=>{if(e.target===$('bulkConfirmOverlay'))closeBulkDialog();});
+$('bulkConfirmExecute').addEventListener('click',()=>{
+ if($('bulkConfirmWord').value.trim()!=='삭제'||!pendingBulkPlan)return;
+ const old=pendingBulkPlan,newPlan=currentBulkPlan();
+ if(old.dates.join('|')!==newPlan.dates.join('|')||old.records!==newPlan.records||old.includeClosed!==$('bulkIncludeClosed').checked){
+   closeBulkDialog();toast('대상 기록이 변경되었습니다. 삭제 범위를 다시 확인해 주세요.');return;
+ }
+ const op={type:'bulkDelete',dates:old.dates.slice(),includeClosed:old.includeClosed};
+ closeBulkDialog();
+ if(doOp(op))toast(old.dates.length+'일 · '+old.records+'건의 출결을 삭제했습니다.');
+});
+window.addEventListener('online',()=>{if(mode==='lan'&&secret)flush();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(autoToday&&today()!==lastToday)changeDate(today(),false);lastToday=today();if(mode==='lan'&&secret)flush();}});
+setInterval(()=>{if(autoToday&&today()!==lastToday){lastToday=today();changeDate(today(),false);}if(mode==='lan'&&secret&&!syncing){if(queue.length)flush();else pull();}},6500);
+$('effectiveInput').value=selectedDate;
+$('recordMonthInput').value=month;
+$('bulkFrom').value=selectedDate;$('bulkTo').value=selectedDate;
+render();updateStatus();tryConnection();
+})();
+</script>
+</body>
+</html>
