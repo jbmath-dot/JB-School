@@ -17,3 +17,21 @@ test('favorite settings remove invalid IDs and de-duplicate entries',()=>{
  assert.deepEqual(W.normalizePreferences({favorites:['seating','seating','bad','budget']}),{version:1,favorites:['seating','budget']});
  assert.deepEqual(W.normalizePreferences(null),{version:1,favorites:[]});
 });
+
+test('isolated synthetic workflows and backup parsing pass',()=>{
+ const modules=[
+  ['JBSchoolCore','../src/core.js'],
+  ['JBSchoolModulesCore','../src/modules-core.js'],
+  ['JBSchoolExtraCore','../src/extra-core.js'],
+  ['JBSchoolOpsCore','../src/ops-core.js'],
+  ['JBSchoolLocalTools','../src/local-tools-core.js']
+ ];
+ for(const [key,path] of modules)globalThis[key]=require(path);
+ try{
+  const results=W.runDemoChecks();
+  assert.equal(results.length,8);
+  assert.deepEqual(results.filter(x=>!x.passed),[]);
+ }finally{
+  for(const [key] of modules)delete globalThis[key];
+ }
+});
