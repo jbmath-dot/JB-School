@@ -10,7 +10,8 @@ function makeBundle(responses,modules,extras,ops){
  if(extras)root.JBSchoolExtraCore.normalize(extras);
  if(ops)root.JBSchoolOpsCore.normalize(ops);
  let timetable;try{const raw=root.localStorage?.getItem('jb-school-timetable-v1');if(raw){const obj=JSON.parse(raw);if(obj?.format==='jb-school-timetable-project'&&obj.version===1)timetable=obj;}}catch(_){}
- return {format:'jb-school-local-backup',version:timetable?4:ops?3:extras?2:1,exportedAt:new Date().toISOString(),responses,modules,...(extras?{extras}:{}),...(ops?{ops}:{}),...(timetable?{timetable}:{})};
+ const workspace=root.JBSchoolWorkspace?.getPreferences?.();
+ return {format:'jb-school-local-backup',version:timetable?4:ops?3:extras?2:1,exportedAt:new Date().toISOString(),responses,modules,...(extras?{extras}:{}),...(ops?{ops}:{}),...(timetable?{timetable}:{}),...(workspace?{workspace}:{})};
 }
 function parseBundle(raw){
  if(typeof raw!=='string'||new TextEncoder().encode(raw).length>MAX_BACKUP_BYTES)throw new Error('백업 용량이 4MB를 초과합니다.');
@@ -20,6 +21,7 @@ function parseBundle(raw){
  root.JBSchoolModulesCore.validateState(d.modules);
  if(d.version>=2)root.JBSchoolExtraCore.normalize(d.extras);
  if(d.version>=3)root.JBSchoolOpsCore.normalize(d.ops);if(d.timetable&&(d.timetable.format!=='jb-school-timetable-project'||d.timetable.version!==1))throw Error('시간표 백업 형식이 잘못됐습니다.');
+ if(d.workspace){if(typeof d.workspace!=='object'||!Array.isArray(d.workspace.favorites)||d.workspace.favorites.length>25||d.workspace.favorites.some(x=>typeof x!=='string'))throw Error('즐겨찾기 백업 형식이 잘못됐습니다.');root.JBSchoolWorkspace?.normalizePreferences?.(d.workspace);}
  return d;
 }
 function describeBundle(bundle){return {campaigns:bundle.responses.campaigns.length,meetings:bundle.modules.meetings.length,trainings:bundle.modules.trainings.length,grading:bundle.modules.grading.entries.length,handover:bundle.modules.handover.length,...(bundle.extras?{extras:Object.values(bundle.extras.modules).reduce((a,x)=>a+x.length,0)}:{}),...(bundle.ops?{ops:Object.values(bundle.ops.modules).reduce((a,x)=>a+x.length,0)}:{}),...(bundle.timetable?{timetable:bundle.timetable.model?.lessons?.length||0}:{})};}
