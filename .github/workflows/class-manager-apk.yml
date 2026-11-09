@@ -40,6 +40,19 @@ jobs:
       - name: Compile debug and separate-package preview (test only)
         working-directory: class-manager-apk
         run: gradle --no-daemon assembleDebug assemblePreview
+      - name: Smoke test Gradle signed-release path with disposable CI key (never uploaded)
+        working-directory: class-manager-apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          temporary_store="$RUNNER_TEMP/temporary-test-only.jks"
+          temporary_password="$(openssl rand -hex 20)"
+          trap 'rm -f "$temporary_store" app/build/outputs/apk/release/app-release.apk' EXIT
+          keytool -genkeypair -storetype JKS -keystore "$temporary_store" -alias ci-test-only -keyalg RSA -keysize 2048 -validity 365 -dname "CN=Disposable CI Test Key" -storepass "$temporary_password" -keypass "$temporary_password" -noprompt >/dev/null 2>&1
+          CM_SIGNING_KEYSTORE_PATH="$temporary_store" CM_SIGNING_STORE_PASSWORD="$temporary_password" CM_SIGNING_KEY_ALIAS=ci-test-only CM_SIGNING_KEY_PASSWORD="$temporary_password" gradle --no-daemon assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          echo "Release signing path verified with a disposable key. No signed update is published by this job."
       - name: Upload separate-package preview (NOT an update)
         uses: actions/upload-artifact@v4
         with:
