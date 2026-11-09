@@ -56,7 +56,8 @@ try {
   if($apkSha -ne $keySha) {
     throw "서명 불일치: 이 키로는 현재 설치된 앱을 덮어쓰기 업데이트할 수 없습니다. 어떤 키도 등록하지 않았습니다."
   }
-  if(-not $PSCmdlet.ShouldContinue("검증된 원본 키를 GitHub Actions의 암호화된 Repository Secrets에 등록하시겠습니까?","원본 키 일치 확인")) {
+  $answer = Read-Host "검증된 원본 키를 GitHub Repository Secrets에 등록할까요? (YES 입력 시 진행)"
+  if($answer -cne "YES") {
     Write-Host "검증만 완료했습니다. 등록은 취소되었습니다."
     exit 0
   }
