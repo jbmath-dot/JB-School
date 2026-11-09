@@ -1,0 +1,7 @@
+# Never commit app signing private keys or credential files.
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+**/private-signing/
