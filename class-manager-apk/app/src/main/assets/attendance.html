@@ -602,7 +602,7 @@ $('clearEdit').addEventListener('click',()=>{
  if(!getCell(date,n)){toast('삭제할 저장 기록이 없습니다.');return;}
  if(isDateClosed(date)){toast('마감된 날짜는 먼저 마감을 해제하세요.');return;}
  const l=getLayout(date),studentName=l?.names?.[n-1]||n+'번 학생';
- if(!window.confirm(date+' · '+n+'번 '+studentName+'의 출결 기록을 깨끗이 지울까요?\\n\\n이 학생의 해당 날짜에 저장된 출결 유형, 교시, 사유, 메모가 모두 삭제됩니다. 다른 날짜와 학생 기록은 유지됩니다.'))return;
+ if(!window.confirm(date+' · '+n+'번 '+studentName+'의 출결 기록을 깨끗이 지울까요?\n\n이 학생의 해당 날짜에 저장된 출결 유형, 교시, 사유, 메모가 모두 삭제됩니다. 다른 날짜와 학생 기록은 유지됩니다.'))return;
  if(doOp({type:'set',date,student:n,baseRev,cell:cleanCell({status:'unrecorded'})})){
    closeEditor();toast(date+' · '+n+'번 출결 기록을 삭제했습니다.');
  }
