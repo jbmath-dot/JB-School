@@ -101,15 +101,7 @@ test('monthly table breaks recognized late and early departure out of other tota
   '2026-11-05':{'1':{status:'late',reason:'illness',detailReason:'두통'}},
   '2026-10-20':{'1':{status:'late',reason:'recognized'}}
  }};
- new Function('db','month','getLayout','
- const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
- assert.equal(new Set(ids).size,ids.length);
- for(const id of ['dateInput','dateWorkStatus','finalizeDate','reopenDate','bulkScope','bulkFrom','bulkTo','bulkIncludeClosed','bulkConfirmOverlay','bulkConfirmWord','bulkDelete','recordViewSelect','recordScopeSelect','recordTable'])assert.ok(ids.includes(id),'missing '+id);
- assert.ok(html.includes('editing={date:selectedDate,n,baseRev'));
- assert.ok(html.includes('const {date,n,baseRev:editingBaseRev}=editing'));
-});
-for(const m of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1].trim())test('embedded JS parses',()=>assert.doesNotThrow(()=>new Function(m[1])));
-,'escapeHtml',source+';renderMonthly();')(
+ new Function('db','month','getLayout','$','escapeHtml',source+';renderMonthly();')(
   db,'2026-11',()=>({count:1,names:['테스트']}),()=>t,s=>String(s)
  );
  assert.ok(t.innerHTML.includes('<th>인정 지각</th><th>인정 조퇴</th>'));
