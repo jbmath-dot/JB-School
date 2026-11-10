@@ -118,7 +118,7 @@ for(const m of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1
 test('field trip full-day counter does not mistake recognized late/early for absence',()=>{
  const snippet=between('function fieldTripUsage(data,student,asOf)', 'function editorWillUseFieldTrip()');
  const counter=new Function('isValidDay','schoolYearStart',snippet+';return fieldTripUsage;')(
-  x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x),
+  x=>/^\d{4}-\d{2}-\d{2}$/.test(x),
   ()=>'2026-03-01'
  );
  const db={attendance:{
