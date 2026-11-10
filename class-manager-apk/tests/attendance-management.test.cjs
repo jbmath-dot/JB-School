@@ -61,14 +61,36 @@ test('bulk delete range preserves layouts and protects finalized days unless opt
  assert.equal(m.get().attendance['2026-10-02'],undefined);
  assert.equal(m.get().closedDates['2026-10-02'],undefined);
 });
-test('history views are numeric student-first or date-first oldest to newest',()=>{
+test('history statistics show only attendance exceptions in numeric/date order',()=>{
  const data={attendance:{'2026-11-10':{'10':{status:'late'},'2':{status:'present'}},'2026-10-03':{'10':{status:'present'},'2':{status:'absence'}}}};
+ const original=JSON.stringify(data);
  const rows=stats.historyRows(data,'',()=>({names:[]}));
  assert.deepEqual(stats.sortHistoryRows(rows,'student').map(x=>x.n+':'+x.date),
-  ['2:2026-10-03','2:2026-11-10','10:2026-10-03','10:2026-11-10']);
+  ['2:2026-10-03','10:2026-11-10']);
  assert.deepEqual(stats.sortHistoryRows(rows,'date').map(x=>x.date+':'+x.n),
-  ['2026-10-03:2','2026-10-03:10','2026-11-10:2','2026-11-10:10']);
- assert.equal(stats.historyRows(data,'2026-10',()=>null).length,2);
+  ['2026-10-03:2','2026-11-10:10']);
+ assert.equal(stats.historyRows(data,'2026-10',()=>null).length,1);
+ assert.equal(JSON.stringify(data),original,'Filtering statistics must not change raw attendance');
+ assert.equal(data.attendance['2026-10-03']['10'].status,'present','Full attendance history must remain stored');
+});
+test('all-present dates are omitted from the statistics list, without clearing records',()=>{
+ const data={attendance:{'2026-11-09':{'1':{status:'present'},'2':{status:'present'}},'2026-11-10':{'1':{status:'absence',reason:'recognized',detailReason:'감염병'},'2':{status:'early',reason:'illness'}}}};
+ const rows=stats.historyRows(data,'',()=>({names:['학생1','학생2']}));
+ assert.deepEqual(rows.map(r=>r.status),['absence','early']);
+ assert.equal(rows[0].reason,'recognized');
+ assert.equal(rows[0].detailReason,'감염병');
+ assert.equal(stats.historyRows(data,'2026-11',()=>null).length,2);
+ assert.equal(data.attendance['2026-11-09']['1'].status,'present');
+ assert.equal(Object.keys(data.attendance['2026-11-09']).length,2);
+});
+test('summary, monthly totals and backup remain independent of the history filtering',()=>{
+ const monthly=between('function renderMonthly()', '/* 학생별/날짜별 통계용 특이 출결 행 모델.');
+ assert.ok(monthly.includes('for(let n=1;n<=l.count;n++)'),'monthly table keeps the entire class roster');
+ assert.ok(monthly.includes('counts.recognized++'),'recognized absences still counted');
+ const render=between('function renderStats(l)', 'function renderBoard(l)');
+ assert.ok(render.includes("['출석',s.present"),'daily summary still shows present count');
+ const backup=between("function backupAll()", "function ");
+ assert.ok(backup.includes("db")||backup.includes("attendance"),'raw attendance remains in backup');
 });
 test('date validation and UI controls, no missing or duplicate IDs',()=>{
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
