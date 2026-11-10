@@ -150,7 +150,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
 </div></div>
 <div class="overlay" id="editOverlay" role="dialog" aria-modal="true" aria-labelledby="editTitle"><div class="dialog">
   <button class="x" id="closeEdit" aria-label="닫기">×</button><h2 id="editTitle">출결 입력</h2><p class="date-label" id="editDate"></p>
-  <div class="eyebrow">빠른 입력 · 조회·1~6교시·종례</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
+  <div class="eyebrow">빠른 입력 · 조회·1~6교시·종례</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button><button class="btn" data-preset="late,recognized">출석인정 지각</button><button class="btn" data-preset="early,recognized">출석인정 조퇴</button></div>
   <section class="fieldtrip-box" aria-labelledby="fieldTripHeading">
     <div class="fieldtrip-top"><span id="fieldTripHeading">교외체험학습 누적 사용일수</span><strong id="fieldTripDays" aria-live="polite">0일</strong></div>
     <p id="fieldTripRange" class="help">해당 학년도 기록을 확인 중입니다.</p>
@@ -169,7 +169,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
   <div id="detailReasonFields" class="field" hidden><label id="detailReasonTitle">세부 사유 빠른 선택</label>
     <div class="detail-reason-chips" id="detailReasonChips" role="group" aria-labelledby="detailReasonTitle"></div>
     <div class="field" id="customReasonWrap" hidden><label for="customReasonInput">기타 사유 직접 입력</label><input id="customReasonInput" type="text" maxlength="60" placeholder="간단한 사유를 입력하세요"></div>
-    <p class="help">선택한 사유는 앱의 보조 출결 기록에 저장됩니다. 출석인정 여부는 학교 규정과 증빙 확인 후 확정하세요.</p>
+    <p class="help">출석인정 결석·지각·조퇴에는 같은 사유 버튼을 사용합니다. 사유 선택 후 해당 교시를 지정하세요. 출석인정 여부는 학교 규정과 증빙 확인 후 확정하세요.</p>
   </div>
   <div class="field"><label for="memoField">간단 메모 (선택, 최대 90자)</label><textarea id="memoField" maxlength="90" placeholder="불필요한 진단명 등 민감한 의료정보는 기재하지 마세요."></textarea></div></div>
   <div class="actions"><button type="button" class="btn danger" id="clearEdit">이 학생·이 날짜 기록 깨끗이 지우기</button><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
@@ -188,7 +188,7 @@ const $=id=>document.getElementById(id), EMPTY=()=>({v:2,version:0,layouts:[],at
 const statuses={unrecorded:'미입력',present:'출석',absence:'결석',late:'지각',early:'조퇴',missed:'결과'};
 const reasons={illness:'질병',recognized:'출석인정',unexcused:'미인정',other:'기타'};
 const PERIODS=['조회','1교시','2교시','3교시','4교시','5교시','6교시','종례'];
-const DETAIL_CHOICES={recognized:['감염병','생리','교외체험학습'],illness:['감기','복통','두통','병원진료']};
+const DETAIL_CHOICES={recognized:['감염병','생리','교외체험학습','기타'],illness:['감기','복통','두통','병원진료']};
 let editingPeriods=[],selectedDetailReason='',customDetailReason='';
 function normalizePeriods(value){const set=new Set(Array.isArray(value)?value:[]);return PERIODS.filter(p=>set.has(p));}
 function automaticPeriods(status,terminal){
@@ -202,7 +202,7 @@ function automaticPeriods(status,terminal){
 }
 function getDetailChoiceKind(){
   const s=$('statusSelect').value,r=$('reasonSelect').value;
-  if(s==='absence'&&r==='recognized')return 'recognized';
+  if((s==='absence'||s==='late'||s==='early')&&r==='recognized')return 'recognized';
   if((s==='absence'||s==='early')&&r==='illness')return 'illness';
   return '';
 }
@@ -240,7 +240,7 @@ function renderPeriodPicker(){
 function renderDetailReasonPicker(){
   const kind=getDetailChoiceKind(),wrap=$('detailReasonFields'),area=$('detailReasonChips');
   wrap.hidden=!kind;area.replaceChildren();if(!kind)return;
-  $('detailReasonTitle').textContent=kind==='recognized'?'출석인정 결석 세부 사유':'질병 '+statuses[$('statusSelect').value]+' 세부 사유';
+  $('detailReasonTitle').textContent=kind==='recognized'?'출석인정 '+statuses[$('statusSelect').value]+' 세부 사유':'질병 '+statuses[$('statusSelect').value]+' 세부 사유';
   const choices=DETAIL_CHOICES[kind];
   if(selectedDetailReason&&selectedDetailReason!=='__custom__'&&!choices.includes(selectedDetailReason)){
     customDetailReason=selectedDetailReason;selectedDetailReason='__custom__';
@@ -321,7 +321,7 @@ function getLayout(date=selectedDate){const ls=db.layouts||[];if(!ls.length)retu
 function getCell(date,n){return (db.attendance[date]||{})[String(n)]||null;}
 function statusName(cell){if(!cell||cell.status==='unrecorded')return '미입력';if(cell.status==='present')return '출석';return `${reasons[cell.reason]||''} ${statuses[cell.status]||''}`.trim();}
 function useCellClass(cell){if(!cell)return 'unrecorded';return cell.reason==='recognized'?'recognized':cell.status;}
-function cleanCell(cell){let status=statuses[cell.status]?cell.status:'unrecorded',real=status!=='unrecorded'&&status!=='present';const reason=real?(reasons[cell.reason]?cell.reason:'illness'):'';let periods=real?normalizePeriods(cell.periods):[];if(status==='absence')periods=PERIODS.slice();return {status,reason,memo:real?String(cell.memo||'').slice(0,90):'',time:real?String(cell.time||'').slice(0,10):'',periods,detailReason:real&&((status==='absence'&&reason==='recognized')||((status==='absence'||status==='early')&&reason==='illness'))?String(cell.detailReason||'').slice(0,60):''};}
+function cleanCell(cell){let status=statuses[cell.status]?cell.status:'unrecorded',real=status!=='unrecorded'&&status!=='present';const reason=real?(reasons[cell.reason]?cell.reason:'illness'):'';let periods=real?normalizePeriods(cell.periods):[];if(status==='absence')periods=PERIODS.slice();return {status,reason,memo:real?String(cell.memo||'').slice(0,90):'',time:real?String(cell.time||'').slice(0,10):'',periods,detailReason:real&&((['absence','late','early'].includes(status)&&reason==='recognized')||((status==='absence'||status==='early')&&reason==='illness'))?String(cell.detailReason||'').slice(0,60):''};}
 function applyLocal(op){
   if(!db.attendance||typeof db.attendance!=='object')db.attendance={};
   if(op.type==='layout'){db.layouts=db.layouts||[];db.layouts.push(op.layout);db.layouts.sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom)||String(a.importedAt||'').localeCompare(String(b.importedAt||'')));}
