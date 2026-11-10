@@ -13,8 +13,8 @@ const clean=html.match(/^function cleanCell\(cell\)\{.+$/m)?.[0];
 assert.ok(clean,'backward-compatible data sanitizer exists');
 const getModel=Function("const statuses={unrecorded:'미입력',present:'출석',absence:'결석',late:'지각',early:'조퇴',missed:'결과'};\n"+
 "const reasons={illness:'질병',recognized:'출석인정',unexcused:'미인정',other:'기타'};\n"+
-"const $=()=>({value:''});\n"+logic+"\n"+clean+"\nreturn {PERIODS,automaticPeriods,normalizePeriods,cleanCell,DETAIL_CHOICES};");
-const {PERIODS,automaticPeriods,normalizePeriods,cleanCell,DETAIL_CHOICES}=getModel();
+"const fields={statusSelect:{value:'unrecorded'},reasonSelect:{value:'illness'}};const $=id=>fields[id]||{value:''};\n"+logic+"\n"+clean+"\nreturn {PERIODS,automaticPeriods,normalizePeriods,cleanCell,DETAIL_CHOICES,getDetailChoiceKind,fields};");
+const {PERIODS,automaticPeriods,normalizePeriods,cleanCell,DETAIL_CHOICES,getDetailChoiceKind,fields}=getModel();
 
 test('all eight sessions are present and in NEIS-style order',()=>{
  assert.deepEqual(PERIODS,['조회','1교시','2교시','3교시','4교시','5교시','6교시','종례']);
@@ -34,12 +34,48 @@ test('early dismissal selecting first missed period fills remainder through home
    assert.deepEqual(automaticPeriods('early',PERIODS[i]),PERIODS.slice(i));
  }
 });
+test('recognized lateness inherits the exact inclusive late-period selection',()=>{
+ fields.statusSelect.value='late';fields.reasonSelect.value='recognized';
+ assert.equal(getDetailChoiceKind(),'recognized');
+ assert.deepEqual(automaticPeriods('late','2교시'),['조회','1교시','2교시']);
+ const c=cleanCell({status:'late',reason:'recognized',periods:automaticPeriods('late','2교시'),detailReason:'교외체험학습'});
+ assert.equal(c.status,'late');assert.equal(c.reason,'recognized');assert.equal(c.detailReason,'교외체험학습');
+ assert.deepEqual(c.periods,['조회','1교시','2교시']);
+});
+test('recognized early departure inherits the exact inclusive early-period selection',()=>{
+ fields.statusSelect.value='early';fields.reasonSelect.value='recognized';
+ assert.equal(getDetailChoiceKind(),'recognized');
+ assert.deepEqual(automaticPeriods('early','4교시'),['4교시','5교시','6교시','종례']);
+ const c=cleanCell({status:'early',reason:'recognized',periods:automaticPeriods('early','4교시'),detailReason:'생리'});
+ assert.equal(c.status,'early');assert.equal(c.reason,'recognized');assert.equal(c.detailReason,'생리');
+ assert.deepEqual(c.periods,['4교시','5교시','6교시','종례']);
+});
+test('recognized details also support absence and other; unrelated reasons do not retain details',()=>{
+ fields.statusSelect.value='absence';fields.reasonSelect.value='recognized';
+ assert.equal(getDetailChoiceKind(),'recognized');
+ const r=cleanCell({status:'absence',reason:'recognized',detailReason:'기타'});
+ assert.equal(r.detailReason,'기타');assert.deepEqual(r.periods,PERIODS);
+ fields.statusSelect.value='early';fields.reasonSelect.value='illness';
+ assert.equal(getDetailChoiceKind(),'illness');
+ assert.equal(cleanCell({status:'early',reason:'illness',detailReason:'복통'}).detailReason,'복통');
+ fields.statusSelect.value='late';fields.reasonSelect.value='unexcused';
+ assert.equal(getDetailChoiceKind(),'');
+ assert.equal(cleanCell({status:'late',reason:'unexcused',detailReason:'생리'}).detailReason,'');
+});
+test('recognized late/early quick presets and independent other reason remain visible',()=>{
+ for(const preset of ['late,recognized','early,recognized']){
+   assert.ok(html.includes('data-preset="'+preset+'"'),'missing recognized preset '+preset);
+ }
+ assert.ok(html.includes('<option value="other">기타</option>'));
+ assert.ok(html.includes("choice==='__custom__'?'기타 직접 입력':choice"));
+});
+
 test('missed lesson lets the user select arbitrary individual sessions',()=>{
  assert.deepEqual(automaticPeriods('missed','4교시'),['4교시']);
  assert.deepEqual(normalizePeriods(['3교시','조회','3교시','INVALID','1교시']),['조회','1교시','3교시']);
 });
 test('reason shortcuts contain all requested choices',()=>{
- assert.deepEqual(DETAIL_CHOICES.recognized,['감염병','생리','교외체험학습']);
+ assert.deepEqual(DETAIL_CHOICES.recognized,['감염병','생리','교외체험학습','기타']);
  assert.deepEqual(DETAIL_CHOICES.illness,['감기','복통','두통','병원진료']);
 });
 test('saves reasons and normalized selections without changing original field names',()=>{
