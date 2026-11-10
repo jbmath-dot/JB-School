@@ -104,6 +104,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
           </div>
           <div class="field" id="recordMonthWrap" hidden><label for="recordMonthInput">조회 월</label><input type="month" id="recordMonthInput"></div>
           <p class="help" id="recordStats" aria-live="polite"></p>
+          <p class="help">일반 출석은 통계 목록에서 생략합니다. 출석 기록은 삭제되지 않으며 일일 현황·월별 집계·전체 백업에 그대로 보존됩니다.</p>
           <div id="recordTable" class="record-view"></div>
           <p class="help">표시된 행을 누르면 해당 날짜로 이동합니다. 마감된 날짜는 마감을 해제해야 수정할 수 있습니다.</p>
         </div>
@@ -384,7 +385,7 @@ function renderMonthly(){const l=getLayout(month+'-15');const t=$('monthTable');
  t.innerHTML=head+'</tbody></table>';
 }
 
-/* 학생별/날짜별 통계용 행 모델. 정렬 기준은 선택한 날짜와 무관하며 과거부터 표시한다. */
+/* 학생별/날짜별 통계용 특이 출결 행 모델. 일반 출석은 목록에서만 제외하며 원본 데이터는 보존한다. */
 function historyRows(data,filterMonth,resolveLayout){
  const rows=[];
  for(const date of Object.keys(data.attendance||{}).filter(isValidDay).sort()){
@@ -392,7 +393,7 @@ function historyRows(data,filterMonth,resolveLayout){
   const items=data.attendance[date]||{},layout=resolveLayout(date);
   for(const n of Object.keys(items).map(Number).filter(x=>Number.isSafeInteger(x)&&x>=1&&x<=40).sort((a,b)=>a-b)){
    const c=items[n];
-   if(!c||!statuses[c.status]||c.status==='unrecorded')continue;
+   if(!c||!statuses[c.status]||c.status==='unrecorded'||c.status==='present')continue;
    rows.push({date,n,name:String(layout?.names?.[n-1]||'').slice(0,30),status:c.status,reason:c.reason||'',detailReason:c.detailReason||'',periods:c.status==='absence'?PERIODS.slice():normalizePeriods(c.periods),memo:c.memo||''});
   }
  }
@@ -415,9 +416,9 @@ function renderRecordStats(){
  const mode=$('recordViewSelect').value;
  const rows=sortHistoryRows(historyRows(db,filterMonth,date=>getLayout(date)),mode);
  const countDates=new Set(rows.map(r=>r.date)).size,countStudents=new Set(rows.map(r=>r.n)).size;
- $('recordStats').textContent='표시 순서: '+(mode==='student'?'학생 번호 오름차순 → 학생별 날짜 과거순':'날짜 과거순 → 날짜별 학생 번호 오름차순')+' · '+rows.length+'건 · '+countStudents+'명 · '+countDates+'일';
+ $('recordStats').textContent='표시 순서: '+(mode==='student'?'학생 번호 오름차순 → 학생별 날짜 과거순':'날짜 과거순 → 날짜별 학생 번호 오름차순')+' · 일반 출석 제외 · '+rows.length+'건 · '+countStudents+'명 · '+countDates+'일';
  const container=$('recordTable');container.replaceChildren();
- if(!rows.length){let empty=document.createElement('p');empty.className='emptymsg';empty.textContent='해당 조건에 저장된 출결 기록이 없습니다.';container.append(empty);return;}
+ if(!rows.length){let empty=document.createElement('p');empty.className='emptymsg';empty.textContent='결석·지각·조퇴·결과 기록이 없습니다. 일반 출석 기록은 이 목록에서 제외됩니다.';container.append(empty);return;}
  const groups=new Map();
  for(const r of rows){const key=mode==='student'?String(r.n):r.date;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
  for(const [key,entries] of groups){
