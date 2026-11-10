@@ -92,6 +92,42 @@ test('summary, monthly totals and backup remain independent of the history filte
  const backup=between('function backup(){','function restore(o)');
  assert.ok(backup.includes('data:db'),'the entire DB, including ordinary present records, remains in backup');
 });
+test('monthly table breaks recognized late and early departure out of other totals',()=>{
+ const source=between('function renderMonthly()', '/* 학생별/날짜별 통계용 특이 출결 행 모델.');
+ const t={innerHTML:''},db={attendance:{
+  '2026-11-02':{'1':{status:'absence',reason:'recognized',detailReason:'감염병'}},
+  '2026-11-03':{'1':{status:'late',reason:'recognized',detailReason:'교외체험학습'}},
+  '2026-11-04':{'1':{status:'early',reason:'recognized',detailReason:'생리'}},
+  '2026-11-05':{'1':{status:'late',reason:'illness',detailReason:'두통'}},
+  '2026-10-20':{'1':{status:'late',reason:'recognized'}}
+ }};
+ new Function('db','month','getLayout','
+ const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+ assert.equal(new Set(ids).size,ids.length);
+ for(const id of ['dateInput','dateWorkStatus','finalizeDate','reopenDate','bulkScope','bulkFrom','bulkTo','bulkIncludeClosed','bulkConfirmOverlay','bulkConfirmWord','bulkDelete','recordViewSelect','recordScopeSelect','recordTable'])assert.ok(ids.includes(id),'missing '+id);
+ assert.ok(html.includes('editing={date:selectedDate,n,baseRev'));
+ assert.ok(html.includes('const {date,n,baseRev:editingBaseRev}=editing'));
+});
+for(const m of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1].trim())test('embedded JS parses',()=>assert.doesNotThrow(()=>new Function(m[1])));
+,'escapeHtml',source+';renderMonthly();')(
+  db,'2026-11',()=>({count:1,names:['테스트']}),()=>t,s=>String(s)
+ );
+ assert.ok(t.innerHTML.includes('<th>인정 지각</th><th>인정 조퇴</th>'));
+ assert.ok(t.innerHTML.includes('<tr><td>1번 테스트</td><td>0</td><td>1</td><td>0</td><td>0</td><td>3</td><td>1</td><td>1</td><td>1</td></tr>'));
+});
+test('field trip full-day counter does not mistake recognized late/early for absence',()=>{
+ const snippet=between('function fieldTripUsage(data,student,asOf)', 'function editorWillUseFieldTrip()');
+ const counter=new Function('isValidDay','schoolYearStart',snippet+';return fieldTripUsage;')(
+  x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x),
+  ()=>'2026-03-01'
+ );
+ const db={attendance:{
+  '2026-11-03':{'1':{status:'absence',reason:'recognized',detailReason:'교외체험학습'}},
+  '2026-11-04':{'1':{status:'late',reason:'recognized',detailReason:'교외체험학습'}},
+  '2026-11-05':{'1':{status:'early',reason:'recognized',detailReason:'교외체험학습'}}
+ }};
+ assert.deepEqual(counter(db,1,'2026-11-10').dates,['2026-11-03']);
+});
 test('date validation and UI controls, no missing or duplicate IDs',()=>{
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
  assert.equal(new Set(ids).size,ids.length);
