@@ -100,7 +100,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
       <section class="panel">
         <div class="tabbar"><button type="button" class="active" data-tab="today">선택 날짜</button><button type="button" data-tab="month">월별 집계</button><button type="button" data-tab="records">전체 기록·통계</button></div>
         <div id="todayPane"><div id="eventSummary"></div></div>
-        <div id="monthPane" hidden><div class="field" style="margin-top:0"><label for="monthInput">집계 월</label><input type="month" id="monthInput"></div><div class="monthly" id="monthTable"></div><p class="help">출석인정 항목은 다른 유형의 건수에서 제외하여 별도 집계합니다. NEIS 반영 전 학교 규정에 따라 확인하세요.</p></div>
+        <div id="monthPane" hidden><div class="field" style="margin-top:0"><label for="monthInput">집계 월</label><input type="month" id="monthInput"></div><div class="monthly" id="monthTable"></div><p class="help">출석인정 결석·지각·조퇴를 구분해 집계합니다. 인정 항목은 일반 결석·지각·조퇴 건수에서 제외되며, 가로 스크롤로 상세 열을 확인할 수 있습니다. NEIS 반영 전 학교 규정에 따라 확인하세요.</p></div>
         <div id="recordsPane" hidden>
           <div class="field" style="margin-top:0"><label for="recordViewSelect">기록 정렬</label>
             <select id="recordViewSelect">
@@ -426,9 +426,21 @@ function renderTodaySummary(l){const box=$('eventSummary');if(!l){box.innerHTML=
  if(!entries.length){const d=document.createElement('p');d.className='sm';d.textContent='입력된 결석·지각·조퇴·결과가 없습니다.';box.appendChild(d);return;}
  entries.forEach(({n,c})=>{const b=document.createElement('button');b.type='button';b.className='studentrow';b.innerHTML='<span class="bubble"></span><span class="student-name"></span><span class="pill"></span>';b.children[0].textContent=n;b.children[1].textContent=l.names[n-1]||`${n}번 학생`;b.children[2].textContent=statusName(c);b.children[2].className='pill '+useCellClass(c);b.addEventListener('click',()=>openEditor(n));box.appendChild(b);});}
 function renderMonthly(){const l=getLayout(month+'-15');const t=$('monthTable');if(!l){t.textContent='자리배치를 먼저 가져오세요.';return;}
- let head='<table><thead><tr><th>학생</th><th>결석</th><th>지각</th><th>조퇴</th><th>결과</th><th>출석인정</th></tr></thead><tbody>';
- for(let n=1;n<=l.count;n++){let counts={absence:0,late:0,early:0,missed:0,recognized:0};for(const [date,items] of Object.entries(db.attendance||{})){if(!date.startsWith(month+'-'))continue;const c=items[n];if(!c)continue;if(c.reason==='recognized')counts.recognized++;else if(counts[c.status]!==undefined)counts[c.status]++;}
- head+=`<tr><td>${escapeHtml(n+'번 '+(l.names[n-1]||''))}</td><td>${counts.absence}</td><td>${counts.late}</td><td>${counts.early}</td><td>${counts.missed}</td><td>${counts.recognized}</td></tr>`;}
+ let head='<table><thead><tr><th>학생</th><th>결석</th><th>지각</th><th>조퇴</th><th>결과</th><th>출석인정 총계</th><th>인정 결석</th><th>인정 지각</th><th>인정 조퇴</th></tr></thead><tbody>';
+ for(let n=1;n<=l.count;n++){
+   let counts={absence:0,late:0,early:0,missed:0,recognized:0,recognizedAbsence:0,recognizedLate:0,recognizedEarly:0};
+   for(const [date,items] of Object.entries(db.attendance||{})){
+     if(!date.startsWith(month+'-'))continue;
+     const c=items[n];if(!c)continue;
+     if(c.reason==='recognized'){
+       counts.recognized++;
+       if(c.status==='absence')counts.recognizedAbsence++;
+       else if(c.status==='late')counts.recognizedLate++;
+       else if(c.status==='early')counts.recognizedEarly++;
+     }else if(counts[c.status]!==undefined)counts[c.status]++;
+   }
+   head+=`<tr><td>${escapeHtml(n+'번 '+(l.names[n-1]||''))}</td><td>${counts.absence}</td><td>${counts.late}</td><td>${counts.early}</td><td>${counts.missed}</td><td>${counts.recognized}</td><td>${counts.recognizedAbsence}</td><td>${counts.recognizedLate}</td><td>${counts.recognizedEarly}</td></tr>`;
+ }
  t.innerHTML=head+'</tbody></table>';
 }
 
