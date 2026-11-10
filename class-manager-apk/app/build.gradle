@@ -28,7 +28,7 @@ android {
     minSdk 23
     targetSdk 35
     versionCode (signedBuildNumber != null ? Integer.parseInt(signedBuildNumber) : 5)
-    versionName (signedBuildNumber != null ? '1.4.0.' + signedBuildNumber : '1.4.0')
+    versionName (signedBuildNumber != null ? '1.4.1.' + signedBuildNumber : '1.4.1')
     manifestPlaceholders = [appLabel: '학급관리']
   }
   signingConfigs {
