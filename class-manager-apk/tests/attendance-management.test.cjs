@@ -89,8 +89,8 @@ test('summary, monthly totals and backup remain independent of the history filte
  assert.ok(monthly.includes('counts.recognized++'),'recognized absences still counted');
  const render=between('function renderStats(l)', 'function renderBoard(l)');
  assert.ok(render.includes("['출석',s.present"),'daily summary still shows present count');
- const backup=between("function backupAll()", "function ");
- assert.ok(backup.includes("db")||backup.includes("attendance"),'raw attendance remains in backup');
+ const backup=between('function backup(){','function restore(o)');
+ assert.ok(backup.includes('data:db'),'the entire DB, including ordinary present records, remains in backup');
 });
 test('date validation and UI controls, no missing or duplicate IDs',()=>{
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
