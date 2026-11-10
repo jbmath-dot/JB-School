@@ -26,6 +26,14 @@ body{line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:poi
 @media print{body{background:#fff}.shell{max-width:none}.main{display:block}.top,.noprint,.panel.settingspanel,.footer,.toast,.overlay{display:none!important}.panel{box-shadow:none;border:0}.board{min-width:0!important}.seat{break-inside:avoid}.seatgrid{gap:5px}.boardwrap{overflow:visible}}
 
 @media(min-width:861px){.stats{grid-template-columns:repeat(7,minmax(0,1fr))}}
+.fieldtrip-box{border:1px solid var(--ui-line,var(--line));background:var(--ui-soft,var(--accentSoft));color:var(--ui-text,var(--fg));padding:12px 13px;border-radius:13px;margin:10px 0 15px}
+.fieldtrip-top{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.93rem;font-weight:800}
+.fieldtrip-top strong{font-size:1.55rem;color:var(--ui-primary,var(--accent));white-space:nowrap;font-variant-numeric:tabular-nums}
+.fieldtrip-box .help{line-height:1.5;margin-top:5px;overflow-wrap:anywhere}
+#fieldTripPending:not(:empty){color:var(--ui-primary,var(--accent));font-weight:750}
+#clearEdit{flex:1 1 100%;min-height:45px}
+#clearEdit:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:420px){.fieldtrip-top strong{font-size:1.38rem}}
 /* NEIS-inspired attendance-by-period controls; all ten themes inherit shared UI variables. */
 
 .date-work-status{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px 12px;border:1px solid var(--ui-line,var(--line));border-radius:11px;margin-top:12px;background:var(--ui-soft,var(--light));font-size:.86rem;font-weight:800;color:var(--ui-text,var(--fg))}
@@ -142,6 +150,12 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
 <div class="overlay" id="editOverlay" role="dialog" aria-modal="true" aria-labelledby="editTitle"><div class="dialog">
   <button class="x" id="closeEdit" aria-label="닫기">×</button><h2 id="editTitle">출결 입력</h2><p class="date-label" id="editDate"></p>
   <div class="eyebrow">빠른 입력 · 조회·1~6교시·종례</div><div class="presets"><button class="btn" data-preset="absence,illness">질병 결석</button><button class="btn" data-preset="absence,recognized">출석인정 결석</button><button class="btn" data-preset="late,unexcused">미인정 지각</button><button class="btn" data-preset="early,illness">질병 조퇴</button></div>
+  <section class="fieldtrip-box" aria-labelledby="fieldTripHeading">
+    <div class="fieldtrip-top"><span id="fieldTripHeading">교외체험학습 누적 사용일수</span><strong id="fieldTripDays" aria-live="polite">0일</strong></div>
+    <p id="fieldTripRange" class="help">해당 학년도 기록을 확인 중입니다.</p>
+    <p id="fieldTripDates" class="help">저장된 교외체험학습 날짜가 표시됩니다.</p>
+    <p id="fieldTripPending" class="help" aria-live="polite"></p>
+  </section>
   <div class="field"><label for="statusSelect">출결 유형</label><select id="statusSelect"><option value="unrecorded">미입력(기록 없음)</option><option value="present">출석</option><option value="absence">결석</option><option value="late">지각</option><option value="early">조퇴</option><option value="missed">결과(수업 불참)</option></select></div>
   <div id="reasonFields"><div class="field"><label for="reasonSelect">출결 구분</label><select id="reasonSelect"><option value="illness">질병</option><option value="recognized">출석인정</option><option value="unexcused">미인정</option><option value="other">기타</option></select></div>
   <div id="periodFields" class="field"><label id="periodTitle">미참여 교시 선택</label>
@@ -157,7 +171,7 @@ try { document.documentElement.setAttribute('data-ui-theme', localStorage.getIte
     <p class="help">선택한 사유는 앱의 보조 출결 기록에 저장됩니다. 출석인정 여부는 학교 규정과 증빙 확인 후 확정하세요.</p>
   </div>
   <div class="field"><label for="memoField">간단 메모 (선택, 최대 90자)</label><textarea id="memoField" maxlength="90" placeholder="불필요한 진단명 등 민감한 의료정보는 기재하지 마세요."></textarea></div></div>
-  <div class="actions"><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
+  <div class="actions"><button type="button" class="btn danger" id="clearEdit">이 학생·이 날짜 기록 깨끗이 지우기</button><button class="btn" id="cancelEdit">취소</button><button class="btn primary" id="saveEdit">이 날짜 출결 저장</button></div>
   <p class="help">교시 미참여 표시는 나이스 입력을 돕는 참고 기록입니다. 같은 날 복합 출결과 출석인정의 최종 처리는 학교 규정에 따라 확인해야 합니다.</p><p class="help" id="editUpdated"></p>
 </div></div>
 <div class="overlay" id="bulkConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="bulkConfirmTitle"><div class="dialog">
@@ -235,7 +249,7 @@ function renderDetailReasonPicker(){
     b.textContent=choice==='__custom__'?'기타 직접 입력':choice;
     b.setAttribute('aria-pressed',String(selectedDetailReason===choice));
     b.addEventListener('click',()=>{
-      selectedDetailReason=choice;renderDetailReasonPicker();
+      selectedDetailReason=choice;renderDetailReasonPicker();renderFieldTripUsage();
       if(choice==='__custom__')$('customReasonInput').focus();
     });area.append(b);
   }
@@ -270,6 +284,38 @@ function today(){return dayString(new Date());}
 function shiftDate(s,days){const [y,m,d]=s.split('-').map(Number),v=new Date(y,m-1,d+days);return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;}
 function newId(){return (self.crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,''):'op_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);}
 function toast(s){const e=$('toast');e.textContent=s;e.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>e.classList.remove('show'),3600);}
+/* This is a record-based count, not an official approved-days allowance.
+   The academic-year boundary is March 1; future dates are excluded. */
+function schoolYearStart(date){
+ const year=Number(String(date).slice(0,4)),month=Number(String(date).slice(5,7));
+ return (month>=3?year:year-1)+'-03-01';
+}
+function fieldTripUsage(data,student,asOf){
+ const from=schoolYearStart(asOf),dates=[];
+ const n=String(student);
+ for(const date of Object.keys(data.attendance||{}).sort()){
+   if(!isValidDay(date)||date<from||date>asOf)continue;
+   const cell=data.attendance[date]?.[n];
+   if(cell?.status==='absence'&&cell?.reason==='recognized'&&String(cell.detailReason||'').trim()==='교외체험학습')dates.push(date);
+ }
+ return {from,to:asOf,days:dates.length,dates};
+}
+function editorWillUseFieldTrip(){
+ return $('statusSelect').value==='absence'&&$('reasonSelect').value==='recognized'&&chosenDetailReason()==='교외체험학습';
+}
+function renderFieldTripUsage(){
+ if(!editing)return;
+ const {date,n}=editing,asOf=today(),usage=fieldTripUsage(db,n,asOf);
+ $('fieldTripDays').textContent=usage.days+'일';
+ $('fieldTripRange').textContent='이번 학년도 '+usage.from+' ~ '+asOf+' · 저장된 출석인정 결석만 집계';
+ $('fieldTripDates').textContent=usage.dates.length?'사용 날짜: '+usage.dates.join(', '):'저장된 교외체험학습 기록이 없습니다.';
+ const canPreview=date>=usage.from&&date<=asOf;
+ const previouslyUsed=usage.dates.includes(date);
+ const willUse=editorWillUseFieldTrip();
+ let delta=0;
+ if(canPreview)delta=(willUse?1:0)-(previouslyUsed?1:0);
+ $('fieldTripPending').textContent=!canPreview?'선택 날짜는 현재 학년도 누적 범위 밖입니다.':delta?'현재 선택 내용대로 저장하면 '+(usage.days+delta)+'일입니다.':'';
+}
 function getLayout(date=selectedDate){const ls=db.layouts||[];if(!ls.length)return null;let result=ls[0];for(const l of ls){if(l.effectiveFrom<=date)result=l;}return result;}
 function getCell(date,n){return (db.attendance[date]||{})[String(n)]||null;}
 function statusName(cell){if(!cell||cell.status==='unrecorded')return '미입력';if(cell.status==='present')return '출석';return `${reasons[cell.reason]||''} ${statuses[cell.status]||''}`.trim();}
@@ -473,9 +519,11 @@ function openEditor(n){syncDateFromControl();if(mode==='lan'&&!secret){showLogin
  $('legacyTimeNote').hidden=!cell?.time;
  $('legacyTimeNote').textContent=cell?.time?'이전 버전에서 입력한 시각·교시: '+cell.time+' (보존됩니다)':'';
 
- $('editUpdated').textContent=cell?.updatedAt?`최근 저장: ${new Date(cell.updatedAt).toLocaleString('ko-KR')}`:'이 날짜의 입력 기록이 없습니다.';toggleReason();$('editOverlay').classList.add('open');$('statusSelect').focus();}
+ $('clearEdit').disabled=!cell;
+ $('clearEdit').hidden=!cell;
+ $('editUpdated').textContent=cell?.updatedAt?`최근 저장: ${new Date(cell.updatedAt).toLocaleString('ko-KR')}`:'이 날짜의 입력 기록이 없습니다.';toggleReason();renderFieldTripUsage();$('editOverlay').classList.add('open');$('statusSelect').focus();}
 function closeEditor(){$('editOverlay').classList.remove('open');editing=null;}
-function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includes($('statusSelect').value);renderPeriodPicker();renderDetailReasonPicker();}
+function toggleReason(){$('reasonFields').hidden=['present','unrecorded'].includes($('statusSelect').value);renderPeriodPicker();renderDetailReasonPicker();renderFieldTripUsage();}
 function changeDate(s,manual){if(!isValidDay(s))return false;
  selectedDate=s;autoToday=!!manual?false:autoToday;month=s.slice(0,7);rememberSelectedDate();
  render();return true;
@@ -542,11 +590,22 @@ $('reopenDate').addEventListener('click',()=>{
  if(doOp({type:'reopen',date}))toast(date+' 마감이 해제되었습니다.');
 });
 $('statusSelect').addEventListener('change',()=>{resetEditorForStatus();toggleReason();});
-$('reasonSelect').addEventListener('change',()=>{selectedDetailReason='';customDetailReason='';renderDetailReasonPicker();});
+$('reasonSelect').addEventListener('change',()=>{selectedDetailReason='';customDetailReason='';renderDetailReasonPicker();renderFieldTripUsage();});
 $('customReasonInput').addEventListener('input',e=>{customDetailReason=e.target.value.slice(0,60);});
 document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{const [s,r]=b.dataset.preset.split(',');$('statusSelect').value=s;$('reasonSelect').value=r;resetEditorForStatus();toggleReason();}));
 $('closeEdit').addEventListener('click',closeEditor);$('cancelEdit').addEventListener('click',closeEditor);
 $('editOverlay').addEventListener('click',e=>{if(e.target===$('editOverlay'))closeEditor();});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditor();});
+$('clearEdit').addEventListener('click',()=>{
+ if(!editing)return;
+ const {date,n,baseRev}=editing;
+ if(!getCell(date,n)){toast('삭제할 저장 기록이 없습니다.');return;}
+ if(isDateClosed(date)){toast('마감된 날짜는 먼저 마감을 해제하세요.');return;}
+ const l=getLayout(date),studentName=l?.names?.[n-1]||n+'번 학생';
+ if(!window.confirm(date+' · '+n+'번 '+studentName+'의 출결 기록을 깨끗이 지울까요?\\n\\n이 학생의 해당 날짜에 저장된 출결 유형, 교시, 사유, 메모가 모두 삭제됩니다. 다른 날짜와 학생 기록은 유지됩니다.'))return;
+ if(doOp({type:'set',date,student:n,baseRev,cell:cleanCell({status:'unrecorded'})})){
+   closeEditor();toast(date+' · '+n+'번 출결 기록을 삭제했습니다.');
+ }
+});
 $('saveEdit').addEventListener('click',()=>{
  if(!editing)return;
  const status=$('statusSelect').value;
